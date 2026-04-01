@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OFFICES OF NAWNIT NIHAL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: #00ff00;
+      font-family: monospace;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
+      padding: 40px;
+      max-width: 800px;
+    }
+
+    h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    .terminal {
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .blink {
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0% {opacity: 1;}
+      50% {opacity: 0;}
+      100% {opacity: 1;}
+    }
+
+    .button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      text-decoration: none;
+    }
+
+    .button:hover {
+      background: #00ff00;
+      color: black;
+    }
+  </style>
+</head>
+
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div class="content">
+  <h1>OFFICES OF NAWNIT NIHAL</h1>
+
+  <div class="terminal">
+    <p>> booting onnwork lab...</p>
+    <p>> loading modules...</p>
+    <p>> transcriber .......... active</p>
+    <p>> experiments .......... unstable</p>
+    <p>> systems .............. running</p>
+    <p>> location ............. kolkata</p>
+    <p>> status ............... building</p>
+    <br>
+
+    <p>> this is a working lab.</p>
+    <p>> tools are built here when they don’t exist.</p>
+    <p>> some work. some break. all evolve.</p>
+
+    <br>
+
+    <p>> available modules:</p>
+    <p>> [1] ONN Transcriber (local AI)</p>
+    <p>> [2] Systems & Automation</p>
+    <p>> [3] Experimental Builds</p>
+
+    <br>
+
+    <p>> enter lab_<span class="blink">|</span></p>
+
+    <a class="button" href="#">ENTER</a>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+
+canvas.height = window.innerHeight;
+canvas.width = window.innerWidth;
+
+const letters = "01ONNWORKLAB";
+const fontSize = 14;
+const columns = canvas.width / fontSize;
+
+const drops = [];
+for (let x = 0; x < columns; x++) {
+  drops[x] = 1;
+}
+
+function draw() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#00ff00";
+  ctx.font = fontSize + "px monospace";
+
+  for (let i = 0; i < drops.length; i++) {
+    const text = letters.charAt(Math.floor(Math.random() * letters.length));
+    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
+
+    drops[i]++;
+  }
+}
+
+setInterval(draw, 33);
+</script>
+
+</body>
+</html>
