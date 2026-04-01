@@ -23,19 +23,46 @@
     }
 
     .wrapper {
+      display: flex;
+      height: 100vh;
+      padding: 20px;
+      gap: 20px;
+      box-sizing: border-box;
       position: relative;
       z-index: 2;
-      display: flex;
-      gap: 20px;
-      padding: 20px;
-      height: 100vh;
-      box-sizing: border-box;
     }
 
     .left {
       flex: 2;
       display: flex;
       flex-direction: column;
+    }
+
+    .console {
+      flex: 1;
+      border: 1px solid rgba(0,255,100,0.3);
+      padding: 15px;
+      background: rgba(0,0,0,0.5);
+      box-shadow: 0 0 15px rgba(0,255,100,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .line {
+      font-size: 13px;
+      margin-bottom: 5px;
+      white-space: pre-wrap;
+    }
+
+    input {
+      margin-top: auto;
+      padding: 12px;
+      background: black;
+      border: 1px solid #33ff99;
+      color: #33ff99;
+      font-family: monospace;
+      outline: none;
     }
 
     .right {
@@ -47,203 +74,153 @@
       overflow-y: auto;
     }
 
-    h2 {
-      margin: 0 0 10px 0;
-    }
-
-    .console {
-      flex: 1;
-      border: 1px solid rgba(0,255,100,0.3);
-      padding: 15px;
-      background: rgba(0,0,0,0.5);
-      box-shadow: 0 0 15px rgba(0,255,100,0.1);
-      display: flex;
-      flex-direction: column;
-    }
-
-    input {
-      margin-top: auto;
-      padding: 12px;
-      background: black;
-      border: 1px solid #33ff99;
-      color: #33ff99;
-      font-family: monospace;
-    }
-
-    .log {
-      font-size: 13px;
-      opacity: 0.8;
-      margin-bottom: 10px;
-    }
-
-    .hint-title {
-      margin-bottom: 10px;
-      font-size: 14px;
-    }
-
     .hint {
-      margin-bottom: 10px;
       font-size: 13px;
-      opacity: 0.8;
+      margin-bottom: 10px;
       border-left: 2px solid #33ff99;
       padding-left: 8px;
+      opacity: 0.85;
     }
 
     a {
       color: #33ff99;
       text-decoration: none;
-      display: inline-block;
       margin-bottom: 10px;
+      display: inline-block;
     }
 
-    @media (max-width: 800px) {
-      .wrapper {
-        flex-direction: column;
-      }
+    @media(max-width:800px){
+      .wrapper{flex-direction:column;}
     }
   </style>
 </head>
 
 <body>
 
-<canvas id="matrix"></canvas>
+<canvas id="canvas"></canvas>
 
 <div class="wrapper">
 
-  <!-- LEFT -->
   <div class="left">
     <a href="toys.html">← BACK</a>
     <h2>> MSW CONSOLE</h2>
 
-    <div class="console">
-      <div id="log" class="log">> awaiting input...</div>
-      <input id="cmd" placeholder="type command..." autofocus>
-    </div>
+    <div class="console" id="console"></div>
+    <input id="cmd" placeholder="type command..." autofocus>
   </div>
 
-  <!-- RIGHT (HINT PANEL) -->
   <div class="right">
-    <div class="hint-title">> COMMAND HINTS</div>
-
-    <div class="hint">square → draw a square</div>
-    <div class="hint">circle → draw a circle</div>
-    <div class="hint">line → draw a diagonal line</div>
+    <div class="hint">square → draw square</div>
+    <div class="hint">circle → draw circle</div>
+    <div class="hint">line → draw line</div>
     <div class="hint">onn → print ONN</div>
-    <div class="hint">clear → reset canvas</div>
-
-    <br>
-
-    <div class="hint-title">> SYSTEM NOTE</div>
-    <div class="hint">
-      Minimal command-driven interface.<br>
-      Input → system → output.<br>
-      No GUI. Only intent.
-    </div>
+    <div class="hint">clear → clear screen</div>
+    <div class="hint">help → show commands</div>
   </div>
 
 </div>
 
 <script>
-// MATRIX BG
-const canvas = document.getElementById("matrix");
+// CANVAS
+const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-function resize() {
+function resize(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
 resize();
 window.addEventListener("resize", resize);
 
-const letters = "01";
-const fontSize = 14;
-let columns = Math.floor(canvas.width / fontSize);
-let drops = Array(columns).fill(1);
 
-function drawMatrix() {
-  ctx.fillStyle = "rgba(0,0,0,0.05)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+// CONSOLE
+const input = document.getElementById("cmd");
+const consoleBox = document.getElementById("console");
 
-  ctx.fillStyle = "#00ff88";
-  ctx.font = fontSize + "px monospace";
+function addLine(text){
+  const div = document.createElement("div");
+  div.className = "line";
+  consoleBox.appendChild(div);
 
-  for (let i = 0; i < drops.length; i++) {
-    const text = letters[Math.floor(Math.random() * letters.length)];
-    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-    if (drops[i] * fontSize > canvas.height && Math.random() > 0.98) {
-      drops[i] = 0;
+  let i = 0;
+  function type(){
+    if(i < text.length){
+      div.textContent += text[i];
+      i++;
+      setTimeout(type, 10);
     }
+  }
+  type();
 
-    drops[i]++;
+  consoleBox.scrollTop = consoleBox.scrollHeight;
+}
+
+
+// COMMANDS
+function execute(cmd){
+  addLine("> " + cmd);
+
+  switch(cmd){
+
+    case "square":
+      ctx.strokeStyle="#00ff88";
+      ctx.strokeRect(200,150,200,200);
+      addLine("drawing square...");
+      break;
+
+    case "circle":
+      ctx.beginPath();
+      ctx.arc(400,300,100,0,Math.PI*2);
+      ctx.strokeStyle="#00ff88";
+      ctx.stroke();
+      addLine("drawing circle...");
+      break;
+
+    case "line":
+      ctx.beginPath();
+      ctx.moveTo(100,100);
+      ctx.lineTo(500,400);
+      ctx.strokeStyle="#00ff88";
+      ctx.stroke();
+      addLine("drawing line...");
+      break;
+
+    case "onn":
+      ctx.font="60px monospace";
+      ctx.fillStyle="#00ff88";
+      ctx.fillText("ONN",300,300);
+      addLine("rendering ONN...");
+      break;
+
+    case "clear":
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      consoleBox.innerHTML="";
+      break;
+
+    case "help":
+      addLine("available commands:");
+      addLine("square, circle, line, onn, clear");
+      break;
+
+    default:
+      addLine("unknown command");
   }
 }
 
-setInterval(drawMatrix, 60);
 
-
-// DRAW SYSTEM
-const input = document.getElementById("cmd");
-const log = document.getElementById("log");
-
-function drawSquare() {
-  ctx.strokeStyle = "#00ff88";
-  ctx.strokeRect(200, 150, 200, 200);
-}
-
-function drawCircle() {
-  ctx.strokeStyle = "#00ff88";
-  ctx.beginPath();
-  ctx.arc(400, 300, 100, 0, Math.PI * 2);
-  ctx.stroke();
-}
-
-function drawLine() {
-  ctx.strokeStyle = "#00ff88";
-  ctx.beginPath();
-  ctx.moveTo(100, 100);
-  ctx.lineTo(500, 400);
-  ctx.stroke();
-}
-
-function drawONN() {
-  ctx.fillStyle = "#00ff88";
-  ctx.font = "60px monospace";
-  ctx.fillText("ONN", 300, 300);
-}
-
-function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-input.addEventListener("keydown", function(e) {
-  if (e.key === "Enter") {
-    const cmd = input.value.toLowerCase();
-    log.innerText = "> " + cmd;
-
-    switch(cmd) {
-      case "square":
-        drawSquare();
-        break;
-      case "circle":
-        drawCircle();
-        break;
-      case "line":
-        drawLine();
-        break;
-      case "onn":
-        drawONN();
-        break;
-      case "clear":
-        clearCanvas();
-        break;
-      default:
-        log.innerText = "> unknown command";
-    }
-
-    input.value = "";
+// INPUT
+input.addEventListener("keydown", function(e){
+  if(e.key==="Enter"){
+    const cmd = input.value.trim().toLowerCase();
+    execute(cmd);
+    input.value="";
   }
 });
+
+
+// BOOT MESSAGE
+addLine("MSW CONSOLE INITIALIZED");
+addLine("type 'help' to begin");
 </script>
 
 </body>
