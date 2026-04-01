@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MATRIX TYPING</title>
+  <title>MSW CONSOLE</title>
   <link rel="icon" href="favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -11,7 +11,7 @@
       background: black;
       color: #33ff99;
       font-family: monospace;
-      padding: 20px;
+      overflow: hidden;
     }
 
     canvas {
@@ -19,27 +19,87 @@
       top: 0;
       left: 0;
       z-index: 0;
-      opacity: 0.12;
+      opacity: 0.08;
     }
 
-    .content {
+    .wrapper {
       position: relative;
       z-index: 2;
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .left {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .right {
+      flex: 1;
+      border: 1px solid rgba(0,255,100,0.3);
+      padding: 15px;
+      background: rgba(0,0,0,0.5);
+      box-shadow: 0 0 15px rgba(0,255,100,0.1);
+      overflow-y: auto;
+    }
+
+    h2 {
+      margin: 0 0 10px 0;
+    }
+
+    .console {
+      flex: 1;
+      border: 1px solid rgba(0,255,100,0.3);
+      padding: 15px;
+      background: rgba(0,0,0,0.5);
+      box-shadow: 0 0 15px rgba(0,255,100,0.1);
+      display: flex;
+      flex-direction: column;
     }
 
     input {
-      width: 100%;
+      margin-top: auto;
       padding: 12px;
       background: black;
       border: 1px solid #33ff99;
       color: #33ff99;
       font-family: monospace;
-      margin-top: 20px;
     }
 
-    .output {
-      margin-top: 20px;
+    .log {
+      font-size: 13px;
       opacity: 0.8;
+      margin-bottom: 10px;
+    }
+
+    .hint-title {
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .hint {
+      margin-bottom: 10px;
+      font-size: 13px;
+      opacity: 0.8;
+      border-left: 2px solid #33ff99;
+      padding-left: 8px;
+    }
+
+    a {
+      color: #33ff99;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 800px) {
+      .wrapper {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -48,14 +108,39 @@
 
 <canvas id="matrix"></canvas>
 
-<div class="content">
-  <a href="toys.html">← BACK</a>
+<div class="wrapper">
 
-  <h2>> MATRIX TYPING</h2>
+  <!-- LEFT -->
+  <div class="left">
+    <a href="toys.html">← BACK</a>
+    <h2>> MSW CONSOLE</h2>
 
-  <input id="input" placeholder="type here..." autofocus>
+    <div class="console">
+      <div id="log" class="log">> awaiting input...</div>
+      <input id="cmd" placeholder="type command..." autofocus>
+    </div>
+  </div>
 
-  <div class="output" id="output"></div>
+  <!-- RIGHT (HINT PANEL) -->
+  <div class="right">
+    <div class="hint-title">> COMMAND HINTS</div>
+
+    <div class="hint">square → draw a square</div>
+    <div class="hint">circle → draw a circle</div>
+    <div class="hint">line → draw a diagonal line</div>
+    <div class="hint">onn → print ONN</div>
+    <div class="hint">clear → reset canvas</div>
+
+    <br>
+
+    <div class="hint-title">> SYSTEM NOTE</div>
+    <div class="hint">
+      Minimal command-driven interface.<br>
+      Input → system → output.<br>
+      No GUI. Only intent.
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -75,8 +160,8 @@ const fontSize = 14;
 let columns = Math.floor(canvas.width / fontSize);
 let drops = Array(columns).fill(1);
 
-function draw() {
-  ctx.fillStyle = "rgba(0,0,0,0.07)";
+function drawMatrix() {
+  ctx.fillStyle = "rgba(0,0,0,0.05)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "#00ff88";
@@ -93,15 +178,71 @@ function draw() {
     drops[i]++;
   }
 }
-setInterval(draw, 60);
+
+setInterval(drawMatrix, 60);
 
 
-// INPUT SYSTEM
-const input = document.getElementById("input");
-const output = document.getElementById("output");
+// DRAW SYSTEM
+const input = document.getElementById("cmd");
+const log = document.getElementById("log");
 
-input.addEventListener("input", () => {
-  output.innerText = "> " + input.value;
+function drawSquare() {
+  ctx.strokeStyle = "#00ff88";
+  ctx.strokeRect(200, 150, 200, 200);
+}
+
+function drawCircle() {
+  ctx.strokeStyle = "#00ff88";
+  ctx.beginPath();
+  ctx.arc(400, 300, 100, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function drawLine() {
+  ctx.strokeStyle = "#00ff88";
+  ctx.beginPath();
+  ctx.moveTo(100, 100);
+  ctx.lineTo(500, 400);
+  ctx.stroke();
+}
+
+function drawONN() {
+  ctx.fillStyle = "#00ff88";
+  ctx.font = "60px monospace";
+  ctx.fillText("ONN", 300, 300);
+}
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+input.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    const cmd = input.value.toLowerCase();
+    log.innerText = "> " + cmd;
+
+    switch(cmd) {
+      case "square":
+        drawSquare();
+        break;
+      case "circle":
+        drawCircle();
+        break;
+      case "line":
+        drawLine();
+        break;
+      case "onn":
+        drawONN();
+        break;
+      case "clear":
+        clearCanvas();
+        break;
+      default:
+        log.innerText = "> unknown command";
+    }
+
+    input.value = "";
+  }
 });
 </script>
 
