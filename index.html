@@ -59,18 +59,40 @@
     }
 
     .icon-box {
-      border: 2px solid #33ff99;
-      padding: 18px;
-      text-align: center;
-      font-size: 24px;
-      text-decoration: none;
-      color: #33ff99;
-    }
+  border: 2px solid #33ff99;
+  padding: 18px;
+  text-align: center;
+  font-size: 24px;
+  text-decoration: none;
+  color: #33ff99;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
 
-    .icon-box:nth-child(1) {
-      border-color: #25D366;
-      color: #25D366;
-    }
+/* Hover glow (same vibe as buttons) */
+.icon-box:hover {
+  background: rgba(0, 255, 100, 0.15);
+  box-shadow: 0 0 15px rgba(0,255,100,0.6);
+}
+
+/* Click pulse */
+.icon-box:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 25px rgba(0,255,100,1);
+}
+
+/* Special WhatsApp styling */
+.icon-box:nth-child(1) {
+  border-color: #25D366;
+  color: #25D366;
+}
+
+/* WhatsApp glow override */
+.icon-box:nth-child(1):hover {
+  background: rgba(37, 211, 102, 0.15);
+  box-shadow: 0 0 15px rgba(37,211,102,0.7);
+}
 
     .buttons {
       display: flex;
