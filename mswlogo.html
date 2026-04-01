@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MSW CONSOLE</title>
+  <title>ONN LOGO ENGINE</title>
   <link rel="icon" href="favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -19,7 +19,7 @@
       top: 0;
       left: 0;
       z-index: 0;
-      opacity: 0.08;
+      opacity: 0.15;
     }
 
     .wrapper {
@@ -103,19 +103,21 @@
 
   <div class="left">
     <a href="toys.html">← BACK</a>
-    <h2>> MSW CONSOLE</h2>
+    <h2>> ONN LOGO ENGINE</h2>
 
     <div class="console" id="console"></div>
-    <input id="cmd" placeholder="type command..." autofocus>
+    <input id="cmd" placeholder="fd 100 | rt 90 | repeat 4 [fd 100 rt 90]" autofocus>
   </div>
 
   <div class="right">
-    <div class="hint">square → draw square</div>
-    <div class="hint">circle → draw circle</div>
-    <div class="hint">line → draw line</div>
-    <div class="hint">onn → print ONN</div>
+    <div class="hint">fd 100 → forward</div>
+    <div class="hint">bk 50 → backward</div>
+    <div class="hint">rt 90 → turn right</div>
+    <div class="hint">lt 90 → turn left</div>
+    <div class="hint">pu / pd → pen up/down</div>
+    <div class="hint">home → reset position</div>
     <div class="hint">clear → clear screen</div>
-    <div class="hint">help → show commands</div>
+    <div class="hint">repeat 4 [fd 100 rt 90]</div>
   </div>
 
 </div>
@@ -132,6 +134,14 @@ function resize(){
 resize();
 window.addEventListener("resize", resize);
 
+// TURTLE STATE
+let x = canvas.width / 2;
+let y = canvas.height / 2;
+let angle = 0;
+let pen = true;
+
+ctx.strokeStyle = "#00ff88";
+ctx.lineWidth = 2;
 
 // CONSOLE
 const input = document.getElementById("cmd");
@@ -140,66 +150,65 @@ const consoleBox = document.getElementById("console");
 function addLine(text){
   const div = document.createElement("div");
   div.className = "line";
+  div.textContent = text;
   consoleBox.appendChild(div);
-
-  let i = 0;
-  function type(){
-    if(i < text.length){
-      div.textContent += text[i];
-      i++;
-      setTimeout(type, 10);
-    }
-  }
-  type();
-
   consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
+// TURTLE FUNCTIONS
+function move(dist){
+  const rad = angle * Math.PI / 180;
+  const nx = x + Math.cos(rad) * dist;
+  const ny = y + Math.sin(rad) * dist;
 
-// COMMANDS
-function execute(cmd){
-  addLine("> " + cmd);
+  if(pen){
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(nx, ny);
+    ctx.stroke();
+  }
 
-  switch(cmd){
+  x = nx;
+  y = ny;
+}
 
-    case "square":
-      ctx.strokeStyle="#00ff88";
-      ctx.strokeRect(200,150,200,200);
-      addLine("drawing square...");
+function executeCommand(cmd){
+  const parts = cmd.split(" ");
+
+  switch(parts[0]){
+
+    case "fd":
+      move(parseFloat(parts[1]));
       break;
 
-    case "circle":
-      ctx.beginPath();
-      ctx.arc(400,300,100,0,Math.PI*2);
-      ctx.strokeStyle="#00ff88";
-      ctx.stroke();
-      addLine("drawing circle...");
+    case "bk":
+      move(-parseFloat(parts[1]));
       break;
 
-    case "line":
-      ctx.beginPath();
-      ctx.moveTo(100,100);
-      ctx.lineTo(500,400);
-      ctx.strokeStyle="#00ff88";
-      ctx.stroke();
-      addLine("drawing line...");
+    case "rt":
+      angle += parseFloat(parts[1]);
       break;
 
-    case "onn":
-      ctx.font="60px monospace";
-      ctx.fillStyle="#00ff88";
-      ctx.fillText("ONN",300,300);
-      addLine("rendering ONN...");
+    case "lt":
+      angle -= parseFloat(parts[1]);
+      break;
+
+    case "pu":
+      pen = false;
+      break;
+
+    case "pd":
+      pen = true;
+      break;
+
+    case "home":
+      x = canvas.width/2;
+      y = canvas.height/2;
+      angle = 0;
       break;
 
     case "clear":
       ctx.clearRect(0,0,canvas.width,canvas.height);
-      consoleBox.innerHTML="";
-      break;
-
-    case "help":
-      addLine("available commands:");
-      addLine("square, circle, line, onn, clear");
       break;
 
     default:
@@ -207,20 +216,39 @@ function execute(cmd){
   }
 }
 
+// REPEAT PARSER
+function execute(input){
+  addLine("> " + input);
+
+  if(input.startsWith("repeat")){
+    const match = input.match(/repeat (\\d+) \\[(.*)\\]/);
+    if(match){
+      const count = parseInt(match[1]);
+      const commands = match[2].split(/(?=fd|bk|rt|lt|pu|pd)/);
+
+      for(let i=0;i<count;i++){
+        commands.forEach(c=>{
+          executeCommand(c.trim());
+        });
+      }
+      return;
+    }
+  }
+
+  executeCommand(input);
+}
 
 // INPUT
 input.addEventListener("keydown", function(e){
   if(e.key==="Enter"){
-    const cmd = input.value.trim().toLowerCase();
-    execute(cmd);
+    execute(input.value.toLowerCase().trim());
     input.value="";
   }
 });
 
-
-// BOOT MESSAGE
-addLine("MSW CONSOLE INITIALIZED");
-addLine("type 'help' to begin");
+// BOOT
+addLine("ONN LOGO ENGINE READY");
+addLine("type commands to draw");
 </script>
 
 </body>
