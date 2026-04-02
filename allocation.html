@@ -1,1 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SPACE ATTACK · NEON TERMINAL SHOOTER</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
 
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at center, #0a0f0a 0%, #000000 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Courier New', 'Fira Code', monospace;
+      padding: 20px;
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    canvas {
+      display: block;
+      box-shadow: 0 0 0 2px #33ff99, 0 0 0 6px rgba(51, 255, 153, 0.2), 0 0 30px rgba(51, 255, 153, 0.4);
+      border-radius: 4px;
+      cursor: none;
+    }
+
+    .info-panel {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid #33ff99;
+      padding: 8px 20px;
+      border-radius: 40px;
+      backdrop-filter: blur(4px);
+      font-weight: bold;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+
+    .status {
+      display: flex;
+      gap: 24px;
+    }
+
+    .status span {
+      color: #33ff99;
+      text-shadow: 0 0 5px #33ff99;
+    }
+
+    button {
+      background: transparent;
+      border: 1.5px solid #33ff99;
+      color: #33ff99;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 14px;
+      padding: 4px 16px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+
+    button:hover {
+      background: #33ff99;
+      color: black;
+      box-shadow: 0 0 12px #33ff99;
+      transform: scale(1.02);
+    }
+
+    .controls-hint {
+      font-size: 11px;
+      opacity: 0.7;
+      display: flex;
+      gap: 20px;
+    }
+  </style>
+</head>
+<body>
+<div class="game-container">
+  <canvas id="gameCanvas" width="1000" height="562"></canvas>
+  <div class="info-panel">
+    <div class="status">⚡ SCORE: <span id="scoreValue">0</span> &nbsp;| LVL: <span id="levelValue">1</span></div>
+    <div class="controls-hint">←↑↓→ / W S &nbsp;| [SPACE] FIRE &nbsp;| [P] PAUSE</div>
+    <button id="pauseBtn">⏸ PAUSE</button>
+  </div>
+</div>
+
+<script>
+  (function(){
+    // ----- CANVAS -----
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // ----- FIXED DIMENSIONS -----
+    const W = 1000, H = 562;
+    canvas.width = W;
+    canvas.height = H;
+    
+    // ----- GLOBAL STATE -----
+    let gameRunning = false;      // actual simulation
+    let paused = false;
+    let animationId = null;
+    let gameOverFlag = false;
+    
+    // ----- GAME DATA -----
+    let score = 0;
+    let level = 1;
+    let enemiesKilled = 0;
+    let levelThreshold = 8;       // kills to next level
+    
+    // ----- PLAYER -----
+    const PLAYER_SIZE = 18;
+    let player = {
+      x: 80,
+      y: H/2,
+      width: PLAYER_SIZE,
+      height: PLAYER_SIZE,
+      health: 100,
+      maxHealth: 100,
+      invincibleTimer: 0,
+      rapidFireTimer: 0,
+      doubleDamageTimer: 0,
+      shieldTimer: 0
+    };
+    
+    // ----- BULLETS -----
+    let playerBullets = [];
+    let enemyBullets = [];
+    const PLAYER_BULLET_SPEED = 7;
+    const ENEMY_BULLET_SPEED = 3.8;
+    let shootCooldown = 0;
+    let baseShootDelay = 12;      // frames
+    let currentShootDelay = 12;
+    
+    // ----- ENEMIES -----
+    let enemies = [];
+    let spawnCounter = 0;
+    let baseSpawnDelay = 45;       // frames between spawns
+    let currentSpawnDelay = 45;
+    
+    // enemy types: basic, fast, tank, shooter
+    class Enemy {
+      constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.width = 0;
+        this.height = 0;
+        this.health = 1;
+        this.speed = 0;
+        this.scoreVal = 10;
+        this.shootCooldown = 0;
+        switch(type){
+          case 'basic':
+            this.width = 24;
+            this.height = 18;
+            this.health = 1;
+            this.speed = 1.6;
+            this.scoreVal = 10;
+            break;
+          case 'fast':
+            this.width = 18;
+            this.height = 14;
+            this.health = 1;
+            this.speed = 3.2;
+            this.scoreVal = 15;
+            break;
+          case 'tank':
+            this.width = 32;
+            this.height = 28;
+            this.health = 4;
+            this.speed = 1.0;
+            this.scoreVal = 40;
+            break;
+          case 'shooter':
+            this.width = 26;
+            this.height = 22;
+            this.health = 2;
+            this.speed = 1.3;
+            this.scoreVal = 25;
+            this.shootCooldown = 0;
+            break;
+        }
+      }
+    }
+    
+    // ----- POWERUPS -----
+    let powerups = [];
+    class Powerup {
+      constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type; // 'rapid', 'shield', 'double'
+        this.width = 14;
+        this.height = 14;
+      }
+    }
+    
+    // ----- SOUND ENGINE (Web Audio, retro synth)-----
+    let audioCtx = null;
+    function initAudio() {
+      if(audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function playShoot() {
+      if(!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'square';
+      osc.frequency.value = 880;
+      gain.gain.value = 0.15;
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+      osc.stop(audioCtx.currentTime + 0.15);
+    }
+    function playExplosion() {
+      if(!audioCtx) return;
+      const noise = audioCtx.createBufferSource();
+      const bufferSize = 4096;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for(let i=0; i<bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const gain = audioCtx.createGain();
+      noise.connect(gain);
+      gain.connect(audioCtx.destination);
+      gain.gain.value = 0.2;
+      noise.start();
+      gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+      noise.stop(audioCtx.currentTime + 0.3);
+    }
+    function playDamage() {
+      if(!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.value = 150;
+      gain.gain.value = 0.2;
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.25);
+      osc.stop(audioCtx.currentTime + 0.25);
+    }
+    function playPowerup() {
+      if(!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 523.25;
+      gain.gain.value = 0.12;
+      osc.start();
+      osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+      osc.stop(audioCtx.currentTime + 0.3);
+    }
+    
+    // ----- UI elements -----
+    const scoreSpan = document.getElementById('scoreValue');
+    const levelSpan = document.getElementById('levelValue');
+    const pauseBtn = document.getElementById('pauseBtn');
+    
+    // ----- Helper Functions -----
+    function updateUI() {
+      scoreSpan.innerText = score;
+      levelSpan.innerText = level;
+    }
+    
+    function applyDifficulty() {
+      let multiplier = 1 + (level-1) * 0.2;
+      currentSpawnDelay = Math.max(18, Math.floor(baseSpawnDelay / multiplier));
+      // enemy speed boost per level
+    }
+    
+    function spawnEnemy() {
+      let rand = Math.random();
+      let type = 'basic';
+      if(level >= 2 && rand < 0.2 + (level*0.03)) type = 'fast';
+      else if(level >= 3 && rand < 0.35 + (level*0.02)) type = 'shooter';
+      else if(level >= 4 && rand < 0.5) type = 'tank';
+      else type = 'basic';
+      if(level >= 5 && Math.random() < 0.25) type = 'tank';
+      let yPos = 30 + Math.random() * (H - 80);
+      let enemy = new Enemy(W + 20, yPos, type);
+      enemies.push(enemy);
+    }
+    
+    function spawnPowerup(x, y) {
+      if(Math.random() < 0.22) {
+        let types = ['rapid', 'shield', 'double'];
+        let rType = types[Math.floor(Math.random() * types.length)];
+        powerups.push(new Powerup(x, y, rType));
+      }
+    }
+    
+    function applyPowerup(type) {
+      if(type === 'rapid') {
+        player.rapidFireTimer = 600; // frames ~10 sec
+        currentShootDelay = 5;
+      } else if(type === 'shield') {
+        player.shieldTimer = 500;
+      } else if(type === 'double') {
+        player.doubleDamageTimer = 450;
+      }
+      playPowerup();
+    }
+    
+    function damagePlayer(amount) {
+      if(player.invincibleTimer > 0) return;
+      if(player.shieldTimer > 0) {
+        player.shieldTimer = Math.max(0, player.shieldTimer - 30);
+        return;
+      }
+      player.health = Math.max(0, player.health - amount);
+      playDamage();
+      player.invincibleTimer = 25;
+      if(player.health <= 0) gameOver();
+    }
+    
+    function gameOver() {
+      gameRunning = false;
+      gameOverFlag = true;
+      paused = false;
+    }
+    
+    function resetGame() {
+      // reset state
+      gameRunning = true;
+      gameOverFlag = false;
+      paused = false;
+      score = 0;
+      level = 1;
+      enemiesKilled = 0;
+      levelThreshold = 8;
+      player.health = player.maxHealth;
+      player.invincibleTimer = 0;
+      player.rapidFireTimer = 0;
+      player.doubleDamageTimer = 0;
+      player.shieldTimer = 0;
+      player.x = 80;
+      player.y = H/2;
+      playerBullets = [];
+      enemyBullets = [];
+      enemies = [];
+      powerups = [];
+      shootCooldown = 0;
+      currentShootDelay = baseShootDelay;
+      currentSpawnDelay = baseSpawnDelay;
+      updateUI();
+      applyDifficulty();
+      if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    
+    // Collision helpers
+    function rectCollide(r1, r2) {
+      return !(r2.x > r1.x + r1.w || r2.x + r2.w < r1.x ||
+        r2.y > r1.y + r1.h || r2.y + r2.h < r1.y);
+    }
+    
+    // ----- GAME UPDATE LOOP -----
+    function updateGame() {
+      if(!gameRunning || paused) return;
+      
+      // cooldown timers
+      if(shootCooldown > 0) shootCooldown--;
+      if(player.invincibleTimer > 0) player.invincibleTimer--;
+      if(player.rapidFireTimer > 0) {
+        player.rapidFireTimer--;
+        if(player.rapidFireTimer <= 0) currentShootDelay = baseShootDelay;
+        else currentShootDelay = 5;
+      } else currentShootDelay = baseShootDelay;
+      if(player.doubleDamageTimer > 0) player.doubleDamageTimer--;
+      if(player.shieldTimer > 0) player.shieldTimer--;
+      
+      // Player movement
+      let move = 0;
+      if(keys.ArrowUp || keys.KeyW) move = -1;
+      if(keys.ArrowDown || keys.KeyS) move = 1;
+      player.y += move * 5.5;
+      player.y = Math.min(Math.max(player.y, 25), H - 25);
+      
+      // Shooting
+      if(keys.Space && shootCooldown === 0 && gameRunning) {
+        playerBullets.push({
+          x: player.x + 12,
+          y: player.y - 3,
+          w: 8, h: 4,
+          damage: player.doubleDamageTimer > 0 ? 2 : 1
+        });
+        playerBullets.push({
+          x: player.x + 12,
+          y: player.y + 3,
+          w: 8, h: 4,
+          damage: player.doubleDamageTimer > 0 ? 2 : 1
+        });
+        playShoot();
+        shootCooldown = currentShootDelay;
+      }
+      
+      // Move bullets
+      for(let i=0; i<playerBullets.length; i++) {
+        playerBullets[i].x += PLAYER_BULLET_SPEED;
+        if(playerBullets[i].x > W) playerBullets.splice(i,1), i--;
+      }
+      for(let i=0; i<enemyBullets.length; i++) {
+        enemyBullets[i].x -= ENEMY_BULLET_SPEED;
+        if(enemyBullets[i].x + 6 < 0) enemyBullets.splice(i,1), i--;
+      }
+      
+      // Enemy spawn logic
+      if(spawnCounter <= 0) {
+        spawnEnemy();
+        let extra = Math.floor(level / 2);
+        if(Math.random() < 0.25 + extra*0.05) spawnEnemy();
+        spawnCounter = currentSpawnDelay;
+      } else spawnCounter--;
+      
+      // Enemy movement, shooting, collision with player
+      for(let i=0; i<enemies.length; i++) {
+        let e = enemies[i];
+        e.x -= e.speed;
+        if(e.type === 'shooter') {
+          if(e.shootCooldown <= 0) {
+            enemyBullets.push({x: e.x-5, y: e.y + e.height/2 - 3, w: 6, h: 4});
+            e.shootCooldown = 45;
+          } else e.shootCooldown--;
+        }
+        // collision with player
+        if(rectCollide({x:e.x, y:e.y, w:e.width, h:e.height}, {x:player.x-8, y:player.y-8, w:16, h:16})) {
+          damagePlayer(20);
+          playExplosion();
+          enemies.splice(i,1);
+          i--;
+          continue;
+        }
+        if(e.x + e.width < 0) enemies.splice(i,1), i--;
+      }
+      
+      // Enemy bullets vs player
+      for(let i=0; i<enemyBullets.length; i++) {
+        let b = enemyBullets[i];
+        if(rectCollide({x:b.x, y:b.y, w:6, h:4}, {x:player.x-8, y:player.y-8, w:16, h:16})) {
+          damagePlayer(10);
+          enemyBullets.splice(i,1);
+          i--;
+        }
+      }
+      
+      // Bullet-Enemy collisions & score
+      for(let i=0; i<playerBullets.length; i++) {
+        let bullet = playerBullets[i];
+        let hit = false;
+        for(let j=0; j<enemies.length; j++) {
+          let e = enemies[j];
+          if(rectCollide({x:e.x, y:e.y, w:e.width, h:e.height}, {x:bullet.x, y:bullet.y, w:bullet.w, h:bullet.h})) {
+            e.health -= bullet.damage;
+            hit = true;
+            if(e.health <= 0) {
+              score += e.scoreVal;
+              enemiesKilled++;
+              spawnPowerup(e.x + e.width/2, e.y + e.height/2);
+              enemies.splice(j,1);
+              playExplosion();
+              // level progression
+              if(enemiesKilled >= levelThreshold) {
+                level++;
+                levelThreshold = Math.floor(levelThreshold + 7 + level*0.5);
+                enemiesKilled = 0;
+                applyDifficulty();
+                updateUI();
+              }
+              updateUI();
+            }
+            break;
+          }
+        }
+        if(hit) { playerBullets.splice(i,1); i--; }
+      }
+      
+      // Powerup collection
+      for(let i=0; i<powerups.length; i++) {
+        let p = powerups[i];
+        if(rectCollide({x:p.x, y:p.y, w:14, h:14}, {x:player.x-10, y:player.y-10, w:20, h:20})) {
+          applyPowerup(p.type);
+          powerups.splice(i,1);
+          i--;
+        }
+      }
+      
+      // health regen on low? no auto but keep UI fresh
+      if(player.health <= 0) gameOver();
+    }
+    
+    // ----- DRAW EVERYTHING (neon terminal style)-----
+    function draw() {
+      if(!ctx) return;
+      ctx.clearRect(0, 0, W, H);
+      // grid background
+      ctx.strokeStyle = '#33ff99';
+      ctx.lineWidth = 0.6;
+      ctx.globalAlpha = 0.18;
+      for(let i=0; i<W; i+=40) {
+        ctx.beginPath();
+        ctx.moveTo(i,0);
+        ctx.lineTo(i,H);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0,i%H);
+        ctx.lineTo(W,i%H);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      
+      // player ship (triangle + glow)
+      ctx.shadowColor = '#33ff99';
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = '#33ff99';
+      ctx.strokeStyle = '#ccffcc';
+      ctx.lineWidth = 1.8;
+      let px = player.x, py = player.y;
+      ctx.beginPath();
+      ctx.moveTo(px+12, py);
+      ctx.lineTo(px-4, py-10);
+      ctx.lineTo(px-2, py-3);
+      ctx.lineTo(px-10, py-3);
+      ctx.lineTo(px-10, py+3);
+      ctx.lineTo(px-2, py+3);
+      ctx.lineTo(px-4, py+10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // engine glow
+      ctx.fillStyle = '#88ffaa';
+      ctx.beginPath();
+      ctx.rect(px-10, py-2, 6, 4);
+      ctx.fill();
+      
+      // shield effect
+      if(player.shieldTimer > 0) {
+        ctx.beginPath();
+        ctx.arc(px+2, py, 18, 0, Math.PI*2);
+        ctx.strokeStyle = '#88ffcc';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+      }
+      
+      // enemies
+      for(let e of enemies) {
+        ctx.fillStyle = '#33ff99';
+        ctx.shadowBlur = 5;
+        if(e.type === 'basic') {
+          ctx.fillRect(e.x, e.y, e.width, e.height);
+          ctx.fillStyle = '#00aa55';
+          ctx.fillRect(e.x+4, e.y+4, e.width-8, e.height-8);
+        } else if(e.type === 'fast') {
+          ctx.beginPath();
+          ctx.moveTo(e.x+e.width, e.y+e.height/2);
+          ctx.lineTo(e.x, e.y);
+          ctx.lineTo(e.x, e.y+e.height);
+          ctx.fill();
+        } else if(e.type === 'tank') {
+          ctx.fillRect(e.x, e.y, e.width, e.height);
+          for(let i=0;i<e.health;i++) {
+            ctx.fillStyle = '#aaff77';
+            ctx.fillRect(e.x+4+i*6, e.y-6, 4, 4);
+          }
+          ctx.fillStyle = '#33ff99';
+          ctx.fillRect(e.x+5, e.y+5, e.width-10, e.height-10);
+        } else if(e.type === 'shooter') {
+          ctx.fillRect(e.x, e.y, e.width, e.height);
+          ctx.fillStyle = '#88ffaa';
+          ctx.beginPath();
+          ctx.ellipse(e.x+5, e.y+e.height/2, 5, 8, 0, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+      
+      // bullets
+      ctx.fillStyle = '#ffff88';
+      ctx.shadowBlur = 5;
+      for(let b of playerBullets) ctx.fillRect(b.x, b.y, 8, 4);
+      ctx.fillStyle = '#ffaa66';
+      for(let b of enemyBullets) ctx.fillRect(b.x, b.y, 6, 4);
+      
+      // powerups
+      for(let p of powerups) {
+        ctx.fillStyle = '#ff66cc';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(p.x, p.y, 12, 12);
+        ctx.fillStyle = '#ffffff';
+        if(p.type === 'rapid') ctx.fillText('R', p.x+3, p.y+10);
+        else if(p.type === 'shield') ctx.fillText('S', p.x+3, p.y+10);
+        else ctx.fillText('D', p.x+3, p.y+10);
+      }
+      
+      // health bar
+      let healthPercent = player.health / player.maxHealth;
+      ctx.fillStyle = '#111111';
+      ctx.fillRect(20, 18, 200, 14);
+      ctx.fillStyle = '#33ff99';
+      ctx.fillRect(20, 18, 200 * healthPercent, 14);
+      ctx.strokeStyle = '#33ff99';
+      ctx.strokeRect(20, 18, 200, 14);
+      ctx.fillStyle = '#33ff99';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(`HEALTH ${player.health}`, 20, 16);
+      
+      // powerup timers display
+      let yOff = 40;
+      if(player.rapidFireTimer > 0) {
+        ctx.fillStyle = '#aaff88';
+        ctx.fillText(`⚡ RAPID ${Math.floor(player.rapidFireTimer/60)}s`, 20, yOff);
+        yOff+=18;
+      }
+      if(player.shieldTimer > 0) {
+        ctx.fillStyle = '#88aaff';
+        ctx.fillText(`🛡️ SHIELD ${Math.floor(player.shieldTimer/60)}s`, 20, yOff);
+        yOff+=18;
+      }
+      if(player.doubleDamageTimer > 0) {
+        ctx.fillStyle = '#ffaa88';
+        ctx.fillText(`💥 DOUBLE DMG ${Math.floor(player.doubleDamageTimer/60)}s`, 20, yOff);
+      }
+      
+      // start / game over overlays
+      if(!gameRunning && !gameOverFlag) {
+        ctx.font = 'bold 28px monospace';
+        ctx.fillStyle = '#33ff99';
+        ctx.shadowBlur = 8;
+        ctx.fillText('⚡ SPACE ATTACK ⚡', W/2-160, H/2-40);
+        ctx.font = '16px monospace';
+        ctx.fillText('PRESS [ENTER] TO START', W/2-130, H/2+20);
+        ctx.fillText('←↑↓→  |  SPACE  |  P', W/2-115, H/2+60);
+      }
+      if(gameOverFlag && !gameRunning) {
+        ctx.fillStyle = '#33ff99';
+        ctx.font = 'bold 32px monospace';
+        ctx.fillText('GAME OVER', W/2-105, H/2-40);
+        ctx.font = '18px monospace';
+        ctx.fillText(`FINAL SCORE: ${score}`, W/2-90, H/2+10);
+        ctx.fillText('PRESS [ENTER] TO RESTART', W/2-125, H/2+60);
+      }
+      if(paused && gameRunning) {
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0,0,W,H);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#33ff99';
+        ctx.font = '28px monospace';
+        ctx.fillText('⏸ PAUSED', W/2-70, H/2);
+      }
+      ctx.shadowBlur = 0;
+    }
+    
+    // ----- GAME LOOP (animation)-----
+    let lastTimestamp = 0;
+    function gameLoop() {
+      updateGame();
+      draw();
+      animationId = requestAnimationFrame(gameLoop);
+    }
+    
+    // ----- KEYBOARD HANDLING -----
+    const keys = {
+      ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+      KeyW: false, KeyS: false, Space: false
+    };
+    window.addEventListener('keydown', (e) => {
+      let code = e.code;
+      if(keys.hasOwnProperty(code)) {
+        e.preventDefault();
+        keys[code] = true;
+      }
+      if(code === 'KeyP') {
+        e.preventDefault();
+        if(gameRunning && !gameOverFlag) {
+          paused = !paused;
+          pauseBtn.innerText = paused ? '▶ RESUME' : '⏸ PAUSE';
+        }
+      }
+      if(code === 'Enter') {
+        e.preventDefault();
+        if(!gameRunning || gameOverFlag) {
+          resetGame();
+          paused = false;
+          gameRunning = true;
+          gameOverFlag = false;
+          pauseBtn.innerText = '⏸ PAUSE';
+          if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        }
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      let code = e.code;
+      if(keys.hasOwnProperty(code)) keys[code] = false;
+    });
+    pauseBtn.addEventListener('click', () => {
+      if(!gameRunning || gameOverFlag) return;
+      paused = !paused;
+      pauseBtn.innerText = paused ? '▶ RESUME' : '⏸ PAUSE';
+    });
+    
+    // init audio on first user click anywhere
+    function unlockAudio() {
+      initAudio();
+      if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      document.removeEventListener('click', unlockAudio);
+    }
+    document.addEventListener('click', unlockAudio);
+    
+    // initial start screen
+    gameRunning = false;
+    gameOverFlag = false;
+    paused = false;
+    resetGame();  // sets data but not running
+    gameRunning = false;
+    updateUI();
+    gameLoop();
+  })();
+</script>
+</body>
+</html>
