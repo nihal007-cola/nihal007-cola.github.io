@@ -214,7 +214,7 @@
       border-radius: 4px;
     }
 
-    /* MOBILE CONTROLS - ALWAYS VISIBLE AND FUNCTIONAL */
+    /* MOBILE CONTROLS */
     .mobile-bottom-bar {
       display: none;
       background: #000000;
@@ -346,10 +346,10 @@
     </div>
   </div>
 
-  <!-- MOBILE BOTTOM BAR - CLEARLY VISIBLE -->
+  <!-- MOBILE BOTTOM BAR -->
   <div class="mobile-bottom-bar" id="mobileBar">
     <div class="mobile-input-group">
-      <input type="text" id="mobileCommand" class="mobile-input" placeholder="Type command: fd 100, rt 90, repeat 4 [fd 50 rt 90]" spellcheck="false" enterkeyhint="send" autocomplete="off">
+      <input type="text" id="mobileCommand" class="mobile-input" placeholder="fd 100, rt 90, repeat 4 [fd 50 rt 90]" spellcheck="false" enterkeyhint="send" autocomplete="off">
       <button class="mobile-submit" id="mobileSubmit">RUN</button>
     </div>
     <div class="quick-commands">
@@ -370,19 +370,12 @@
     const canvas = document.getElementById("turtleCanvas");
     const ctx = canvas.getContext("2d");
     
-    let drawingLayer = null;
-    let animationFrame = null;
-    let moveQueue = [];
-    let isAnimating = false;
-    
     let turtle = {
       x: 0,
       y: 0,
       angle: 0,
       pen: true
     };
-    
-    const STEP_SIZE = 3;
     
     const consoleHistory = document.getElementById("consoleHistory");
     const penStatusSpan = document.getElementById("penStatus");
@@ -396,48 +389,36 @@
     }
     
     function drawGrid() {
-      if (!drawingLayer) return;
-      drawingLayer.save();
-      drawingLayer.globalAlpha = 0.12;
-      drawingLayer.strokeStyle = "#33ff99";
-      drawingLayer.lineWidth = 0.8;
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.strokeStyle = "#33ff99";
+      ctx.lineWidth = 0.8;
       for (let i = 0; i < canvas.width; i += 40) {
-        drawingLayer.beginPath();
-        drawingLayer.moveTo(i, 0);
-        drawingLayer.lineTo(i, canvas.height);
-        drawingLayer.stroke();
-        drawingLayer.beginPath();
-        drawingLayer.moveTo(0, i);
-        drawingLayer.lineTo(canvas.width, i);
-        drawingLayer.stroke();
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
       }
-      drawingLayer.restore();
-    }
-    
-    function initDrawingLayer() {
-      drawingLayer = ctx;
-      setupCanvasStyle();
-      drawGrid();
+      ctx.restore();
     }
     
     function setupCanvasStyle() {
-      if (!drawingLayer) return;
-      drawingLayer.lineWidth = 3.5;
-      drawingLayer.strokeStyle = "#33ff99";
-      drawingLayer.shadowColor = "#33ff99";
-      drawingLayer.shadowBlur = 4;
-      drawingLayer.lineCap = "round";
-      drawingLayer.lineJoin = "round";
-      drawingLayer.fillStyle = "#33ff99";
-      drawingLayer.globalAlpha = 1.0;
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = "#33ff99";
+      ctx.shadowColor = "#33ff99";
+      ctx.shadowBlur = 4;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.fillStyle = "#33ff99";
+      ctx.globalAlpha = 1.0;
     }
     
     function drawTurtleCursor() {
       ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (drawingLayer) {
-        ctx.drawImage(canvas, 0, 0);
-      }
       ctx.shadowBlur = 4;
       ctx.fillStyle = "#33ff99";
       ctx.strokeStyle = "#ccffcc";
@@ -471,111 +452,45 @@
     }
     
     function clearCanvas() {
-      if (!drawingLayer) return;
-      drawingLayer.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawGrid();
       setupCanvasStyle();
       drawTurtleCursor();
     }
     
-    function drawLineSegment(x1, y1, x2, y2) {
-      if (!drawingLayer) return;
-      drawingLayer.beginPath();
-      drawingLayer.moveTo(x1, y1);
-      drawingLayer.lineTo(x2, y2);
-      drawingLayer.stroke();
-    }
-    
-    function animateMovement() {
-      if (moveQueue.length === 0) {
-        isAnimating = false;
-        if (animationFrame) {
-          cancelAnimationFrame(animationFrame);
-          animationFrame = null;
-        }
-        drawTurtleCursor();
-        return;
-      }
-      
-      const move = moveQueue[0];
-      const rad = move.angle * Math.PI / 180;
-      let remaining = move.remainingDistance;
-      let stepsThisFrame = Math.min(Math.ceil(remaining / STEP_SIZE), 2);
-      
-      for (let s = 0; s < stepsThisFrame; s++) {
-        const stepDistance = Math.min(STEP_SIZE, remaining);
-        const newX = move.currentX + Math.cos(rad) * stepDistance;
-        const newY = move.currentY + Math.sin(rad) * stepDistance;
-        
-        if (move.pen) {
-          drawLineSegment(move.currentX, move.currentY, newX, newY);
-        }
-        
-        move.currentX = newX;
-        move.currentY = newY;
-        remaining -= stepDistance;
-        move.remainingDistance = remaining;
-        
-        if (remaining <= 0.1) {
-          turtle.x = move.targetX;
-          turtle.y = move.targetY;
-          moveQueue.shift();
-          drawTurtleCursor();
-          animationFrame = requestAnimationFrame(animateMovement);
-          return;
-        }
-      }
-      
-      turtle.x = move.currentX;
-      turtle.y = move.currentY;
-      drawTurtleCursor();
-      animationFrame = requestAnimationFrame(animateMovement);
-    }
-    
-    function queueMovement(distance) {
+    // DIRECT DRAWING - NO ANIMATION QUEUE, JUST SMOOTH LINES
+    function moveTurtle(distance) {
       const rad = turtle.angle * Math.PI / 180;
-      const targetX = turtle.x + Math.cos(rad) * distance;
-      const targetY = turtle.y + Math.sin(rad) * distance;
-      const clampedX = Math.min(Math.max(targetX, 5), canvas.width - 5);
-      const clampedY = Math.min(Math.max(targetY, 5), canvas.height - 5);
+      const newX = turtle.x + Math.cos(rad) * distance;
+      const newY = turtle.y + Math.sin(rad) * distance;
       
-      moveQueue.push({
-        startX: turtle.x,
-        startY: turtle.y,
-        currentX: turtle.x,
-        currentY: turtle.y,
-        targetX: clampedX,
-        targetY: clampedY,
-        remainingDistance: Math.abs(distance),
-        angle: turtle.angle,
-        pen: turtle.pen
-      });
-      
-      if (!isAnimating) {
-        isAnimating = true;
-        animateMovement();
+      if (turtle.pen) {
+        ctx.beginPath();
+        ctx.moveTo(turtle.x, turtle.y);
+        ctx.lineTo(newX, newY);
+        ctx.stroke();
       }
+      
+      turtle.x = Math.min(Math.max(newX, 5), canvas.width - 5);
+      turtle.y = Math.min(Math.max(newY, 5), canvas.height - 5);
+      drawTurtleCursor();
     }
     
     function execCommand(cmd, val = null) {
       switch(cmd) {
-        case "fd": if(val !== null) queueMovement(val); break;
-        case "bk": if(val !== null) queueMovement(-val); break;
+        case "fd": if(val !== null) moveTurtle(val); break;
+        case "bk": if(val !== null) moveTurtle(-val); break;
         case "rt": if(val !== null) turtle.angle += val; drawTurtleCursor(); break;
         case "lt": if(val !== null) turtle.angle -= val; drawTurtleCursor(); break;
         case "pu": turtle.pen = false; updatePenIndicator(); drawTurtleCursor(); break;
         case "pd": turtle.pen = true; updatePenIndicator(); drawTurtleCursor(); break;
         case "home":
-          moveQueue = [];
-          isAnimating = false;
           turtle.x = canvas.width / 2;
           turtle.y = canvas.height / 2;
           turtle.angle = 0;
           drawTurtleCursor();
           break;
         case "clear":
-          moveQueue = [];
-          isAnimating = false;
           clearCanvas();
           break;
         default: return false;
@@ -682,6 +597,7 @@
       } catch(e) {
         addConsoleLine(`ERROR: ${e.message}`);
       }
+      drawTurtleCursor();
       updatePenIndicator();
     }
     
@@ -694,39 +610,22 @@
       canvas.width = rect.width;
       canvas.height = rect.height;
       
-      if (oldWidth > 0 && oldHeight > 0 && drawingLayer) {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = oldWidth;
-        tempCanvas.height = oldHeight;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(canvas, 0, 0);
-        
-        drawingLayer.clearRect(0, 0, canvas.width, canvas.height);
-        drawGrid();
-        setupCanvasStyle();
-        
+      if (oldWidth > 0 && oldHeight > 0 && turtle.x > 0 && turtle.y > 0) {
         const scaleX = canvas.width / oldWidth;
         const scaleY = canvas.height / oldHeight;
-        drawingLayer.save();
-        drawingLayer.scale(scaleX, scaleY);
-        drawingLayer.drawImage(tempCanvas, 0, 0);
-        drawingLayer.restore();
-        
         turtle.x = turtle.x * scaleX;
         turtle.y = turtle.y * scaleY;
       } else {
         turtle.x = canvas.width / 2;
         turtle.y = canvas.height / 2;
-        drawGrid();
-        setupCanvasStyle();
       }
       
       turtle.x = Math.min(Math.max(turtle.x, 10), canvas.width - 10);
       turtle.y = Math.min(Math.max(turtle.y, 10), canvas.height - 10);
       
+      drawGrid();
+      setupCanvasStyle();
       drawTurtleCursor();
-      window._prevW = canvas.width;
-      window._prevH = canvas.height;
     }
     
     function attachCanvasResize() {
@@ -744,15 +643,15 @@
     
     function init() {
       attachCanvasResize();
-      initDrawingLayer();
-      turtle.x = canvas.width / 2;
-      turtle.y = canvas.height / 2;
+      resizeCanvasAndCenter();
+      setupCanvasStyle();
+      drawGrid();
       turtle.angle = 0;
       turtle.pen = true;
       drawTurtleCursor();
       updatePenIndicator();
       addConsoleLine("🐢 ONN LOGO ENGINE — READY");
-      addConsoleLine("✨ SMOOTH ANIMATED DRAWING — continuous trails");
+      addConsoleLine("✨ SMOOTH CONTINUOUS DRAWING — full trails visible");
       addConsoleLine("🎨 type 'clear' to reset, 'home' to center turtle");
       addConsoleLine("🔥 NEON LINES with GLOW — enhanced visibility!");
       addConsoleLine("📱 Mobile: Type in the GREEN input box below");
@@ -811,10 +710,6 @@
             mobileCommand.blur();
           }
         });
-      });
-      
-      canvas.addEventListener("touchstart", (e) => {
-        e.preventDefault();
       });
       
       const backBtn = document.getElementById("backBtn");
