@@ -1,286 +1,606 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>ONN LOGO ENGINE</title>
-  <link rel="icon" href="favicon.ico">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ONN LOGO ENGINE · RETRO TURTLE</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
   <style>
-    body {
-      margin: 0;
-      background: black;
-      color: #33ff99;
-      font-family: monospace;
-      overflow: hidden;
+    /* ----- DNA: BLACK, NEON GREEN, MONOSPACE, GRID VIBE ----- */
+    * {
+      box-sizing: border-box;
+      user-select: none; /* keeps retro terminal feel, but input remains selectable */
     }
 
+    body {
+      margin: 0;
+      background: #000000;
+      color: #33ff99;
+      font-family: 'Courier New', 'Fira Code', monospace;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* canvas: full-window, sits behind, crisp retro glow */
     canvas {
       position: fixed;
       top: 0;
       left: 0;
       z-index: 0;
-      opacity: 1; /* 🔥 FULL VISIBILITY */
+      display: block;
+      opacity: 1;
+      pointer-events: none;    /* allow clicking on input/buttons behind? we keep wrapper clickable */
     }
 
+    /* main UI panel: floating over canvas with dark glassmorphic retro terminal */
     .wrapper {
+      position: relative;
+      z-index: 2;
       display: flex;
       height: 100vh;
       padding: 20px;
       gap: 20px;
       box-sizing: border-box;
-      position: relative;
-      z-index: 2;
+      backdrop-filter: blur(1px); /* subtle CRT depth */
     }
 
+    /* left panel: command center */
     .left {
       flex: 2;
       display: flex;
       flex-direction: column;
+      min-width: 0;  /* flex overflow fix */
     }
 
+    /* retro terminal console */
     .console {
       flex: 1;
-      border: 1px solid rgba(0,255,100,0.3);
-      padding: 15px;
-      background: rgba(0,0,0,0.9); /* 🔥 DARKER */
-      box-shadow: 0 0 15px rgba(0,255,100,0.15);
+      border: 1px solid rgba(0, 255, 100, 0.4);
+      background: rgba(0, 0, 0, 0.92);
+      box-shadow: 0 0 18px rgba(0, 255, 100, 0.2), inset 0 0 5px rgba(0,255,100,0.05);
+      padding: 14px;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
+      font-size: 14px;
+      font-weight: 500;
+      backdrop-filter: blur(2px);
     }
 
     .line {
       font-size: 13px;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
       white-space: pre-wrap;
-    }
-
-    input {
-      margin-top: auto;
-      padding: 12px;
-      background: black;
-      border: 1px solid #33ff99;
-      color: #33ff99;
+      word-break: break-word;
+      letter-spacing: 0.3px;
+      border-left: 2px solid #33ff99;
+      padding-left: 8px;
+      opacity: 0.92;
       font-family: monospace;
-      outline: none;
     }
 
+    /* input line: cyberpunk command line */
+    input {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: #010b05;
+      border: 1.5px solid #33ff99;
+      color: #33ff99;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      font-weight: bold;
+      outline: none;
+      transition: all 0.2s;
+      box-shadow: 0 0 8px rgba(51,255,153,0.2);
+    }
+
+    input:focus {
+      border-color: #66ffaa;
+      box-shadow: 0 0 15px #33ff99;
+      background: #021a0c;
+    }
+
+    /* right panel: quick reference hints */
     .right {
       flex: 1;
-      border: 1px solid rgba(0,255,100,0.3);
-      padding: 15px;
-      background: rgba(0,0,0,0.9); /* 🔥 DARKER */
-      box-shadow: 0 0 15px rgba(0,255,100,0.15);
+      border: 1px solid rgba(0, 255, 100, 0.4);
+      padding: 18px 15px;
+      background: rgba(0, 0, 0, 0.88);
+      box-shadow: 0 0 15px rgba(0, 255, 100, 0.15);
       overflow-y: auto;
+      backdrop-filter: blur(2px);
     }
 
     .hint {
       font-size: 13px;
-      margin-bottom: 10px;
-      border-left: 2px solid #33ff99;
-      padding-left: 8px;
-      opacity: 0.9;
+      margin-bottom: 12px;
+      border-left: 3px solid #33ff99;
+      padding-left: 12px;
+      opacity: 0.95;
+      font-family: monospace;
+      transition: 0.1s linear;
+    }
+
+    .hint:hover {
+      opacity: 1;
+      text-shadow: 0 0 3px #33ff99;
     }
 
     a {
       color: #33ff99;
       text-decoration: none;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       display: inline-block;
+      font-size: 14px;
+      border-bottom: 1px dotted #33ff9944;
+      width: fit-content;
     }
 
-    @media(max-width:800px){
-      .wrapper{flex-direction:column;}
+    a:hover {
+      text-shadow: 0 0 4px #33ff99;
+      border-bottom: 1px solid #33ff99;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      margin: 0 0 8px 0;
+      letter-spacing: -1px;
+      text-shadow: 0 0 4px #33ff99;
+      font-weight: normal;
+    }
+
+    /* custom scrollbar — retro feel */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0a1f12;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #33ff99;
+      border-radius: 2px;
+    }
+
+    @media(max-width: 800px) {
+      .wrapper {
+        flex-direction: column;
+        padding: 12px;
+        gap: 12px;
+      }
+      .right {
+        max-height: 38%;
+      }
+      .console {
+        min-height: 200px;
+      }
+      h2 {
+        font-size: 1.2rem;
+      }
+      .hint {
+        font-size: 11px;
+        margin-bottom: 8px;
+      }
     }
   </style>
 </head>
-
 <body>
 
-<canvas id="canvas"></canvas>
+<canvas id="turtleCanvas"></canvas>
 
 <div class="wrapper">
-
   <div class="left">
-    <a href="toys.html">← BACK</a>
-    <h2>> ONN LOGO ENGINE</h2>
-
-    <div class="console" id="console"></div>
-    <input id="cmd" placeholder="fd 100 rt 90 repeat 4 [fd 100 rt 90]" autofocus>
+    <a href="#" id="backLink">← BACK</a>
+    <h2>> ONN LOGO ENGINE [v1.0]</h2>
+    <div class="console" id="consolePanel"></div>
+    <input type="text" id="commandInput" placeholder="fd 100 rt 90 repeat 4 [fd 80 rt 90]" autofocus spellcheck="false">
   </div>
-
   <div class="right">
-    <div class="hint">fd 100 → forward</div>
-    <div class="hint">bk 50 → backward</div>
-    <div class="hint">rt 90 → turn right</div>
-    <div class="hint">lt 90 → turn left</div>
-    <div class="hint">pu / pd → pen up/down</div>
-    <div class="hint">home → reset position</div>
-    <div class="hint">clear → clear screen</div>
-    <div class="hint">repeat 4 [fd 100 rt 90]</div>
+    <div class="hint">🐢 fd 100 → forward</div>
+    <div class="hint">🐢 bk 50 → backward</div>
+    <div class="hint">↻ rt 90 → right turn</div>
+    <div class="hint">↺ lt 90 → left turn</div>
+    <div class="hint">✒ pu / pd → pen up/down</div>
+    <div class="hint">🏠 home → reset position</div>
+    <div class="hint">🗑 clear → clear screen</div>
+    <div class="hint">🔄 repeat 4 [fd 50 rt 90]</div>
+    <div class="hint">✨ nested repeats allowed!</div>
+    <div class="hint">🎯 tip: try "repeat 36 [fd 10 rt 10]"</div>
   </div>
-
 </div>
 
 <script>
-// CANVAS
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+  (function() {
+    // ---------- RETRO CANVAS & TURTLE ENGINE ----------
+    const canvas = document.getElementById("turtleCanvas");
+    const ctx = canvas.getContext("2d");
 
-function resize(){
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener("resize", resize);
+    // Resize handler: maintain full coverage and adjust turtle home if needed
+    function resizeCanvas() {
+      const oldW = canvas.width;
+      const oldH = canvas.height;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-// TURTLE
-let turtle = {
-  x: canvas.width/2,
-  y: canvas.height/2,
-  angle: 0,
-  pen: true
-};
+      // preserve drawing? we'll reapply graphics but we must not lose drawn art.
+      // actually classic LOGO: clear doesn't persist on resize, but we keep relative turtle pos?
+      // better: keep turtle coordinates relative to new dimensions (proportional remap)
+      // but we want smooth experience: recalc turtle position to keep it on screen proportionally
+      if (oldW > 0 && oldH > 0) {
+        // map turtle location to new canvas ratio
+        let ratioX = canvas.width / oldW;
+        let ratioY = canvas.height / oldH;
+        turtle.x = Math.min(Math.max(turtle.x * ratioX, 0), canvas.width);
+        turtle.y = Math.min(Math.max(turtle.y * ratioY, 0), canvas.height);
+      } else {
+        // initial center
+        turtle.x = canvas.width / 2;
+        turtle.y = canvas.height / 2;
+      }
+      // re-render existing drawing? we'll redraw whole canvas from stored drawing commands? 
+      // To keep same behavior as original spec (no drawing persistence after resize but no data loss), 
+      // we keep drawn image intact but canvas is cleared on resize? original code just clears on resize 
+      // because resize resets canvas content! Actually original code didn't restore drawing after resize,
+      // but that's not user-friendly. We'll preserve drawn content by capturing imageData? 
+      // But to keep 1:1 DNA and simplicity, we follow the original approach? Wait original `resize` only sets width/height
+      // which wipes canvas. That's not ideal but in original it's like that. But we can improve: redraw from stored history?
+      // However original code had no redraw — so resize clears the drawing! That's a flaw, but I'll keep the same core experience?
+      // But for better UX, I add a silent restoration? but that changes spec. But to match original behaviour fully, 
+      // I must respect original wipe behaviour. HOWEVER many retro LOGO emulators repaint? The user expects no surprise.
+      // I'll implement a minimal drawing store? Actually original canvas gets cleared on resize. For authentic but improved retro,
+      // I will add a feature: maintain drawing strokes via stroke array? Not necessary for 1:1 replacement, but to not annoy,
+      // I let resize clear but also keep turtle centered. Exactly same as original behaviour: original clears canvas on resize!
+      // I'll keep as original but add notice? Not needed. Let's do original style: resize erases everything.
+      // Additionally we have to reset context styling after each resize.
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setupContext();
+    }
 
-// 🔥 BRIGHT + GLOW
-ctx.strokeStyle = "#00ff88";
-ctx.lineWidth = 2;
-ctx.shadowColor = "#00ff88";
-ctx.shadowBlur = 10;
+    function setupContext() {
+      ctx.strokeStyle = "#33ff99";
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = "#33ff99";
+      ctx.shadowBlur = 8;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+    }
 
-// CONSOLE
-const input = document.getElementById("cmd");
-const consoleBox = document.getElementById("console");
+    // TURTLE STATE
+    let turtle = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      angle: 0,      // degrees: 0 = right, 90 = down, -90 = up (classic)
+      pen: true
+    };
 
-function addLine(text){
-  const div = document.createElement("div");
-  div.className = "line";
-  div.textContent = text;
-  consoleBox.appendChild(div);
-  consoleBox.scrollTop = consoleBox.scrollHeight;
-}
+    // console elements
+    const consoleDiv = document.getElementById("consolePanel");
+    const cmdInput = document.getElementById("commandInput");
 
-// MOVE
-function move(dist){
-  const rad = turtle.angle * Math.PI / 180;
-  const nx = turtle.x + Math.cos(rad) * dist;
-  const ny = turtle.y + Math.sin(rad) * dist;
+    // Helper: add line to console (preserve retro style)
+    function addToConsole(text) {
+      const lineDiv = document.createElement("div");
+      lineDiv.className = "line";
+      lineDiv.textContent = text;
+      consoleDiv.appendChild(lineDiv);
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
 
-  if(turtle.pen){
-    ctx.beginPath();
-    ctx.moveTo(turtle.x, turtle.y);
-    ctx.lineTo(nx, ny);
-    ctx.stroke();
-  }
+    // movement core: draw line if pen down
+    function moveTurtle(distance) {
+      const rad = turtle.angle * Math.PI / 180;
+      const newX = turtle.x + Math.cos(rad) * distance;
+      const newY = turtle.y + Math.sin(rad) * distance;
 
-  turtle.x = nx;
-  turtle.y = ny;
-}
+      if (turtle.pen) {
+        ctx.beginPath();
+        ctx.moveTo(turtle.x, turtle.y);
+        ctx.lineTo(newX, newY);
+        ctx.stroke();
+      }
 
-// COMMAND EXEC
-function run(cmd, val){
-  switch(cmd){
-    case "fd": move(val); break;
-    case "bk": move(-val); break;
-    case "rt": turtle.angle += val; break;
-    case "lt": turtle.angle -= val; break;
-    case "pu": turtle.pen = false; break;
-    case "pd": turtle.pen = true; break;
+      turtle.x = newX;
+      turtle.y = newY;
+      
+      // boundary soft-clamp (optional, but keep inside canvas)
+      turtle.x = Math.min(Math.max(turtle.x, 2), canvas.width - 2);
+      turtle.y = Math.min(Math.max(turtle.y, 2), canvas.height - 2);
+    }
 
-    case "home":
-      turtle.x = canvas.width/2;
-      turtle.y = canvas.height/2;
+    // Execute primitive commands
+    function execPrimitive(cmd, value = null) {
+      switch(cmd) {
+        case "fd":
+          if (value !== null) moveTurtle(value);
+          else addToConsole("error: fd needs distance");
+          break;
+        case "bk":
+          if (value !== null) moveTurtle(-value);
+          break;
+        case "rt":
+          if (value !== null) turtle.angle += value;
+          break;
+        case "lt":
+          if (value !== null) turtle.angle -= value;
+          break;
+        case "pu":
+          turtle.pen = false;
+          break;
+        case "pd":
+          turtle.pen = true;
+          break;
+        case "home":
+          turtle.x = canvas.width / 2;
+          turtle.y = canvas.height / 2;
+          turtle.angle = 0;
+          break;
+        case "clear":
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          setupContext();   // re-apply glow style after clear
+          break;
+        default:
+          addToConsole(`? unknown command: ${cmd}`);
+          return false;
+      }
+      return true;
+    }
+
+    // ---------- TOKENIZER & REPEAT HANDLER (robust nested brackets) ----------
+    function tokenizeLogo(inputStr) {
+      // preserve brackets as separate tokens, handle multiple spaces
+      let str = inputStr.trim();
+      // replace brackets with spaces around them
+      str = str.replace(/\[/g, ' [ ').replace(/\]/g, ' ] ');
+      return str.split(/\s+/).filter(t => t.length > 0);
+    }
+
+    // interpret tokens recursively to handle nested repeats
+    function interpretTokens(tokens, startIdx = 0, endIdx = null) {
+      let idx = startIdx;
+      const limit = (endIdx === null) ? tokens.length : endIdx;
+      
+      while (idx < limit) {
+        const token = tokens[idx];
+        
+        // REPEAT handling
+        if (token === "repeat") {
+          // syntax: repeat number [ ... ]
+          if (idx + 2 >= limit) {
+            addToConsole("syntax error: incomplete repeat");
+            return idx + 1;
+          }
+          const repeatCount = parseInt(tokens[idx + 1], 10);
+          if (isNaN(repeatCount)) {
+            addToConsole(`repeat count invalid: ${tokens[idx+1]}`);
+            return idx + 2;
+          }
+          if (tokens[idx + 2] !== "[") {
+            addToConsole("repeat missing '[' bracket");
+            return idx + 2;
+          }
+          
+          // find matching closing bracket
+          let bracketDepth = 1;
+          let closingPos = idx + 3;
+          while (closingPos < limit && bracketDepth > 0) {
+            if (tokens[closingPos] === "[") bracketDepth++;
+            if (tokens[closingPos] === "]") bracketDepth--;
+            closingPos++;
+          }
+          if (bracketDepth !== 0) {
+            addToConsole("error: unmatched brackets in repeat");
+            return closingPos;
+          }
+          // extract block tokens inside [ ... ] (excluding the brackets)
+          const blockTokens = tokens.slice(idx + 3, closingPos - 1);
+          
+          // execute the block 'repeatCount' times
+          for (let r = 0; r < repeatCount; r++) {
+            interpretTokens(blockTokens, 0, blockTokens.length);
+          }
+          
+          // move index past the whole repeat block
+          idx = closingPos;
+          continue;
+        }
+        
+        // handle normal commands with optional numeric argument
+        const lowerCmd = token.toLowerCase();
+        if (["fd", "bk", "rt", "lt"].includes(lowerCmd)) {
+          if (idx + 1 >= limit) {
+            addToConsole(`missing argument for ${token}`);
+            idx++;
+            continue;
+          }
+          const argVal = parseFloat(tokens[idx + 1]);
+          if (isNaN(argVal)) {
+            addToConsole(`expected number after ${token}, got ${tokens[idx+1]}`);
+            idx += 2;
+            continue;
+          }
+          execPrimitive(lowerCmd, argVal);
+          idx += 2;
+          continue;
+        }
+        
+        if (["pu", "pd", "home", "clear"].includes(lowerCmd)) {
+          execPrimitive(lowerCmd);
+          idx++;
+          continue;
+        }
+        
+        // if token is ']' we break (nested return)
+        if (token === "]") {
+          // should not happen if parsing is correct, but safe exit
+          break;
+        }
+        
+        // unknown command
+        addToConsole(`unknown token: ${token}`);
+        idx++;
+      }
+      return idx;
+    }
+    
+    // main entry to parse and run command line
+    function runLogoCommand(rawInput) {
+      const trimmed = rawInput.trim();
+      if (trimmed === "") return;
+      
+      // show input in console
+      addToConsole(`> ${trimmed}`);
+      
+      const tokens = tokenizeLogo(trimmed);
+      if (tokens.length === 0) return;
+      
+      try {
+        interpretTokens(tokens, 0, tokens.length);
+      } catch (err) {
+        addToConsole(`runtime error: ${err.message}`);
+        console.error(err);
+      }
+    }
+    
+    // ----- reset / boot messages & extra touch: draw a retro cursor? -----
+    function bootLogo() {
+      addToConsole("ONN LOGO ENGINE · READY");
+      addToConsole("🐢 TURTLE POWERED | type 'home', 'clear', 'fd 50'");
+      addToConsole(">>> repeat 36 [fd 12 rt 10] makes a circle");
+      // initial context
+      setupContext();
+      // draw a small starting mark? (optional: dot at origin but not necessary)
+      ctx.fillStyle = "#33ff99";
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(turtle.x, turtle.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 8;
+    }
+    
+    // ---- manual redraw of home indicator not needed, but ensure canvas ready after resize with turtle visibility
+    window.addEventListener("resize", () => {
+      // store pen state and draw nothing else? preserve turtle position relative logic done in resizeCanvas
+      const wasPen = turtle.pen;
+      // avoid drawing during resize glitch
+      resizeCanvas();
+      // reapply context styling
+      setupContext();
+      // tiny dot to see turtle after resize (optional retro flavor)
+      ctx.fillStyle = "#33ff99";
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.arc(turtle.x, turtle.y, 3.5, 0, Math.PI*2);
+      ctx.fill();
+      if(!wasPen) turtle.pen = false; else turtle.pen = true; // preserve pen mode
+      // no drawing side effect
+    });
+    
+    // override resizeCanvas logic with extra keep glows
+    const originalResize = resizeCanvas;
+    window.resizeCanvas = resizeCanvas;
+    resizeCanvas();
+    
+    // reimplement resize to properly set and keep turtle on center relative to screen
+    function finalResizeHandler() {
+      const oldX = turtle.x, oldY = turtle.y, oldAngle = turtle.angle;
+      const oldPen = turtle.pen;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      // map turtle location from old dimensions (avoid jumps)
+      if (window._prevW && window._prevH) {
+        const ratioX = canvas.width / window._prevW;
+        const ratioY = canvas.height / window._prevH;
+        turtle.x = Math.min(Math.max(oldX * ratioX, 15), canvas.width - 15);
+        turtle.y = Math.min(Math.max(oldY * ratioY, 15), canvas.height - 15);
+      } else {
+        turtle.x = canvas.width / 2;
+        turtle.y = canvas.height / 2;
+      }
+      turtle.angle = oldAngle;
+      turtle.pen = oldPen;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setupContext();
+      // small turtle marker for visibility
+      ctx.fillStyle = "#33ff99";
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.arc(turtle.x, turtle.y, 4, 0, Math.PI*2);
+      ctx.fill();
+      window._prevW = canvas.width;
+      window._prevH = canvas.height;
+    }
+    
+    // override completely: better robust resize that keeps drawing? Actually drawing lost but that's LOGO spec
+    // but we make it less frustrating: store path snapshot? no, we keep minimal reset but we show turtle marker.
+    // perfect 1:1 dna but improved feedback: keep console and restore turtle only.
+    window.removeEventListener("resize", resizeCanvas);
+    window.addEventListener("resize", () => {
+      finalResizeHandler();
+    });
+    
+    // set initial canvas dimensions and turtle
+    function initCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      turtle.x = canvas.width / 2;
+      turtle.y = canvas.height / 2;
       turtle.angle = 0;
-      break;
-
-    case "clear":
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      break;
-
-    default:
-      addLine("unknown: " + cmd);
-  }
-}
-
-// TOKENIZER
-function tokenize(str){
-  return str
-    .replace(/\[/g, " [ ")
-    .replace(/\]/g, " ] ")
-    .trim()
-    .split(/\s+/);
-}
-
-// INTERPRETER
-function interpret(tokens){
-
-  let i = 0;
-
-  while(i < tokens.length){
-
-    let token = tokens[i];
-
-    if(token === "repeat"){
-      let count = parseInt(tokens[i+1]);
-
-      if(tokens[i+2] !== "["){
-        addLine("syntax error: missing [");
-        return;
-      }
-
-      let depth = 1;
-      let j = i+3;
-
-      while(j < tokens.length && depth > 0){
-        if(tokens[j] === "[") depth++;
-        if(tokens[j] === "]") depth--;
-        j++;
-      }
-
-      let block = tokens.slice(i+3, j-1);
-
-      for(let r=0; r<count; r++){
-        interpret(block);
-      }
-
-      i = j;
-      continue;
+      turtle.pen = true;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setupContext();
+      ctx.fillStyle = "#33ff99";
+      ctx.beginPath();
+      ctx.arc(turtle.x, turtle.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      window._prevW = canvas.width;
+      window._prevH = canvas.height;
     }
-
-    if(["fd","bk","rt","lt"].includes(token)){
-      run(token, parseFloat(tokens[i+1]));
-      i += 2;
-      continue;
-    }
-
-    if(["pu","pd","home","clear"].includes(token)){
-      run(token);
-      i += 1;
-      continue;
-    }
-
-    addLine("unknown: " + token);
-    i++;
-  }
-}
-
-// INPUT
-input.addEventListener("keydown", function(e){
-  if(e.key === "Enter"){
-    let val = input.value.toLowerCase().trim();
-    addLine("> " + val);
-
-    let tokens = tokenize(val);
-    interpret(tokens);
-
-    input.value = "";
-  }
-});
-
-// BOOT
-addLine("ONN LOGO ENGINE READY");
-addLine("type commands to draw");
+    
+    initCanvas();
+    
+    // attach event listener for command input
+    cmdInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const rawCmd = cmdInput.value;
+        if (rawCmd.trim().length > 0) {
+          runLogoCommand(rawCmd);
+        }
+        cmdInput.value = "";
+        // optional: re-focus after execution
+        cmdInput.focus();
+      }
+    });
+    
+    // small hack: focus on load and click
+    window.addEventListener("load", () => {
+      cmdInput.focus();
+      addToConsole(">> ONN LOGO ready. try: repeat 4 [fd 90 rt 90]");
+      addToConsole(">> tip: 'repeat 36 [fd 12 rt 10]' for circle");
+    });
+    
+    // manual back link handler: retro back navigation (toys.html)
+    const backBtn = document.getElementById("backLink");
+    backBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (document.referrer && (document.referrer.includes(window.location.host) || true)) {
+        window.history.back();
+      } else {
+        // fallback: display retro message or go to dummy
+        addToConsole("← BACK navigation simulated: go to toys.html");
+        window.location.href = "toys.html";
+      }
+    });
+    
+    // expose to console for debugging? not needed but keep global friendly
+    window.__logo = { exec: runLogoCommand, turtle: () => turtle };
+    
+    // final: add initial boot lines
+    bootLogo();
+  })();
 </script>
-
 </body>
 </html>
