@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ONN LOGO ENGINE · RETRO TURTLE GRAPHICS</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
   <style>
-    /* ----- DNA: BLACK, NEON GREEN, MONOSPACE, RETRO TERMINAL VIBE ----- */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
@@ -20,9 +20,9 @@
       overflow: hidden;
       height: 100vh;
       width: 100vw;
+      position: fixed;
     }
 
-    /* MAIN LAYOUT: DUAL PANEL WITH FIXED DRAWING ZONE */
     .app-container {
       display: flex;
       flex-direction: column;
@@ -32,19 +32,20 @@
       background: #000000;
     }
 
-    /* TOP BAR: retro status */
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      padding: 12px 24px;
+      padding: 12px 20px;
       background: rgba(0, 0, 0, 0.85);
       border-bottom: 1px solid #33ff9944;
       backdrop-filter: blur(4px);
       z-index: 10;
+      flex-wrap: wrap;
+      gap: 8px;
     }
     .logo-title {
-      font-size: 1.3rem;
+      font-size: 1rem;
       letter-spacing: -1px;
       text-shadow: 0 0 6px #33ff99;
       font-weight: bold;
@@ -52,26 +53,23 @@
     .back-link {
       color: #33ff99;
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       border-bottom: 1px dotted #33ff99;
       transition: 0.2s;
     }
-    .back-link:hover {
+    .back-link:active {
       text-shadow: 0 0 6px #33ff99;
-      border-bottom: 1px solid #33ff99;
     }
 
-    /* MAIN FLEX: LEFT (CONSOLE) + RIGHT (DRAWING ARENA) */
     .main-dashboard {
       display: flex;
       flex: 1;
-      gap: 16px;
-      padding: 16px 20px 20px 20px;
+      gap: 12px;
+      padding: 12px;
       overflow: hidden;
       min-height: 0;
     }
 
-    /* LEFT PANEL: TERMINAL CONSOLE (commands + history) */
     .console-panel {
       flex: 1.2;
       display: flex;
@@ -84,33 +82,34 @@
       backdrop-filter: blur(2px);
     }
     .console-header {
-      padding: 10px 14px;
+      padding: 8px 12px;
       background: #051a0c;
       border-bottom: 1px solid #33ff9944;
       font-weight: bold;
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       letter-spacing: 1px;
     }
     .console-history {
       flex: 1;
       overflow-y: auto;
-      padding: 12px;
-      font-size: 13px;
+      padding: 10px;
+      font-size: 11px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
+      -webkit-overflow-scrolling: touch;
     }
     .line {
-      border-left: 3px solid #33ff99;
-      padding-left: 10px;
-      margin-bottom: 4px;
+      border-left: 2px solid #33ff99;
+      padding-left: 8px;
+      margin-bottom: 3px;
       white-space: pre-wrap;
       word-break: break-word;
       font-family: monospace;
       opacity: 0.92;
     }
     .input-area {
-      padding: 12px;
+      padding: 10px;
       border-top: 1px solid #33ff9944;
       background: #010a03;
     }
@@ -118,10 +117,10 @@
       width: 100%;
       background: black;
       border: 1.5px solid #33ff99;
-      padding: 12px;
+      padding: 10px;
       color: #33ff99;
       font-family: monospace;
-      font-size: 14px;
+      font-size: 13px;
       outline: none;
       border-radius: 6px;
       font-weight: bold;
@@ -131,7 +130,6 @@
       background: #021a0a;
     }
 
-    /* RIGHT PANEL: PROMINENT DRAWING CANVAS ZONE */
     .drawing-arena {
       flex: 2;
       display: flex;
@@ -145,9 +143,9 @@
     }
     .arena-header {
       background: #051a0c;
-      padding: 8px 16px;
+      padding: 6px 12px;
       border-bottom: 1px solid #33ff9944;
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       font-weight: bold;
       display: flex;
       justify-content: space-between;
@@ -161,6 +159,7 @@
       align-items: center;
       justify-content: center;
       cursor: crosshair;
+      touch-action: none;
     }
     canvas {
       display: block;
@@ -169,8 +168,8 @@
       background: #000000;
       box-shadow: inset 0 0 30px rgba(0,0,0,0.2);
       cursor: crosshair;
+      touch-action: none;
     }
-    /* retro scanline effect overlay - reduced opacity to not interfere */
     .canvas-wrapper::after {
       content: "";
       position: absolute;
@@ -183,30 +182,29 @@
       z-index: 2;
     }
 
-    /* RIGHT SIDE REFERENCE PANEL (hints compact) */
     .reference-panel {
       flex: 0.8;
       background: rgba(0, 0, 0, 0.85);
       border: 1px solid #33ff9944;
       border-radius: 8px;
-      padding: 14px;
+      padding: 10px;
       overflow-y: auto;
       backdrop-filter: blur(2px);
+      -webkit-overflow-scrolling: touch;
     }
     .hint {
-      font-size: 12px;
-      margin-bottom: 12px;
+      font-size: 10px;
+      margin-bottom: 8px;
       border-left: 2px solid #33ff99;
-      padding-left: 10px;
+      padding-left: 8px;
       font-family: monospace;
     }
     .hint strong {
       color: #66ffaa;
     }
 
-    /* scrollbar */
     ::-webkit-scrollbar {
-      width: 6px;
+      width: 4px;
     }
     ::-webkit-scrollbar-track {
       background: #0a1f12;
@@ -216,15 +214,48 @@
       border-radius: 4px;
     }
 
+    /* Mobile touch command buttons */
+    .mobile-command-bar {
+      display: none;
+      background: rgba(0, 0, 0, 0.9);
+      border-top: 1px solid #33ff9944;
+      padding: 8px;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    .cmd-btn {
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid #33ff99;
+      color: #33ff99;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.05s linear;
+      touch-action: manipulation;
+    }
+    .cmd-btn:active {
+      background: #33ff99;
+      color: black;
+      transform: scale(0.95);
+    }
+
     @media (max-width: 850px) {
       .main-dashboard {
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
+        padding: 10px;
       }
-      .console-panel { flex: 1; min-height: 200px; }
-      .drawing-arena { flex: 2; min-height: 280px; }
-      .reference-panel { flex: 0.6; }
-      .top-bar { padding: 8px 16px; }
+      .console-panel { flex: 1; min-height: 180px; }
+      .drawing-arena { flex: 2; min-height: 250px; }
+      .reference-panel { flex: 0.5; max-height: 120px; }
+      .top-bar { padding: 8px 12px; }
+      .logo-title { font-size: 0.85rem; }
+      .mobile-command-bar { display: flex; }
     }
   </style>
 </head>
@@ -237,68 +268,70 @@
   </div>
 
   <div class="main-dashboard">
-    <!-- LEFT: COMMAND CONSOLE -->
     <div class="console-panel">
       <div class="console-header">⚡ TERMINAL :: COMMAND HISTORY</div>
       <div class="console-history" id="consoleHistory"></div>
       <div class="input-area">
-        <input type="text" id="cmd" placeholder="fd 80 rt 90 repeat 4 [fd 100 rt 90] | try 'circle 36'" autofocus spellcheck="false">
+        <input type="text" id="cmd" placeholder="fd 80 rt 90 repeat 4 [fd 100 rt 90]" autofocus spellcheck="false" enterkeyhint="send">
       </div>
     </div>
 
-    <!-- CENTER: PROMINENT DRAWING AREA -->
     <div class="drawing-arena">
       <div class="arena-header">
         <span>🎨 TURTLE CANVAS — DRAWING ZONE</span>
-        <span style="font-size:11px;">🐢 active pen: <span id="penStatus">DOWN</span></span>
+        <span style="font-size:10px;">🐢 active pen: <span id="penStatus">DOWN</span></span>
       </div>
       <div class="canvas-wrapper">
         <canvas id="turtleCanvas"></canvas>
       </div>
     </div>
 
-    <!-- RIGHT: QUICK REFERENCE -->
     <div class="reference-panel">
       <div class="hint"><strong>fd 100</strong> → forward</div>
       <div class="hint"><strong>bk 50</strong> → backward</div>
       <div class="hint"><strong>rt 90</strong> → right turn</div>
       <div class="hint"><strong>lt 90</strong> → left turn</div>
-      <div class="hint"><strong>pu</strong> / <strong>pd</strong> → pen up/down</div>
-      <div class="hint"><strong>home</strong> → reset position</div>
-      <div class="hint"><strong>clear</strong> → erase all</div>
-      <div class="hint"><strong>repeat 4 [fd 80 rt 90]</strong> → square</div>
-      <div class="hint"><strong>repeat 36 [fd 12 rt 10]</strong> → circle</div>
-      <div class="hint"><strong>nested repeats!</strong> → repeat 2 [repeat 3 [fd 40 rt 120] rt 60]</div>
+      <div class="hint"><strong>pu/pd</strong> → pen up/down</div>
+      <div class="hint"><strong>home</strong> → reset</div>
+      <div class="hint"><strong>clear</strong> → erase</div>
+      <div class="hint"><strong>repeat 4 [fd 80 rt 90]</strong></div>
     </div>
+  </div>
+
+  <!-- Mobile Quick Command Bar -->
+  <div class="mobile-command-bar" id="mobileCommandBar">
+    <button class="cmd-btn" data-cmd="fd 50">↑ FD 50</button>
+    <button class="cmd-btn" data-cmd="bk 50">↓ BK 50</button>
+    <button class="cmd-btn" data-cmd="rt 90">↻ RT 90</button>
+    <button class="cmd-btn" data-cmd="lt 90">↺ LT 90</button>
+    <button class="cmd-btn" data-cmd="pu">✏️ PU</button>
+    <button class="cmd-btn" data-cmd="pd">✍️ PD</button>
+    <button class="cmd-btn" data-cmd="clear">🗑️ CLEAR</button>
+    <button class="cmd-btn" data-cmd="home">🏠 HOME</button>
   </div>
 </div>
 
 <script>
   (function() {
-    // ---------- RETRO TURTLE GRAPHICS ENGINE (enhanced visibility) ----------
     const canvas = document.getElementById("turtleCanvas");
     const ctx = canvas.getContext("2d");
     
-    // Turtle state
     let turtle = {
       x: 0,
       y: 0,
-      angle: 0,     // 0 = right (east), 90 = down (south)
+      angle: 0,
       pen: true
     };
     
-    // DOM elements
     const consoleHistory = document.getElementById("consoleHistory");
     const cmdInput = document.getElementById("cmd");
     const penStatusSpan = document.getElementById("penStatus");
     
-    // Helper: update pen status indicator
     function updatePenIndicator() {
       penStatusSpan.innerText = turtle.pen ? "DOWN ✍️" : "UP ✏️";
       penStatusSpan.style.color = turtle.pen ? "#33ff99" : "#ffaa33";
     }
     
-    // Draw persistent grid overlay (always visible, not cleared by drawings)
     function drawGrid() {
       ctx.save();
       ctx.globalAlpha = 0.12;
@@ -317,14 +350,12 @@
       ctx.restore();
     }
     
-    // Resize canvas and maintain drawing area (explicit drawing region)
     function resizeCanvasAndCenter() {
       const wrapper = document.querySelector(".canvas-wrapper");
       const rect = wrapper.getBoundingClientRect();
       canvas.width = rect.width;
       canvas.height = rect.height;
       
-      // only reset turtle position if canvas dimensions changed drastically? we keep relative mapping
       if (window._prevW && window._prevH && window._prevW > 0 && window._prevH > 0) {
         const ratioX = canvas.width / window._prevW;
         const ratioY = canvas.height / window._prevH;
@@ -336,28 +367,25 @@
         turtle.x = canvas.width / 2;
         turtle.y = canvas.height / 2;
       }
-      // re-setup graphics context & redraw a small cursor to see turtle
       setupCanvasStyle();
-      drawGrid();          // persistent grid background
+      drawGrid();
       drawTurtleCursor();
       window._prevW = canvas.width;
       window._prevH = canvas.height;
     }
     
     function setupCanvasStyle() {
-      ctx.lineWidth = 3.5;        // SOLID, VISIBLE THICKNESS
+      ctx.lineWidth = 3.5;
       ctx.strokeStyle = "#33ff99";
       ctx.shadowColor = "#33ff99";
-      ctx.shadowBlur = 3;         // MINIMAL GLOW - preserves density
+      ctx.shadowBlur = 3;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.fillStyle = "#33ff99";
-      ctx.globalAlpha = 1.0;      // FULLY OPAQUE LINES
+      ctx.globalAlpha = 1.0;
     }
     
-    // draw a visible retro turtle cursor (triangle + eye)
     function drawTurtleCursor() {
-      // save context
       ctx.save();
       ctx.shadowBlur = 4;
       ctx.fillStyle = "#33ff99";
@@ -367,7 +395,6 @@
       const angleRad = turtle.angle * Math.PI / 180;
       const headX = turtle.x + Math.cos(angleRad) * size;
       const headY = turtle.y + Math.sin(angleRad) * size;
-      // triangle points
       const leftAngle = angleRad + (2.3);
       const rightAngle = angleRad - (2.3);
       const leftX = turtle.x + Math.cos(leftAngle) * (size * 0.75);
@@ -379,11 +406,8 @@
       ctx.lineTo(leftX, leftY);
       ctx.lineTo(rightX, rightY);
       ctx.closePath();
-      ctx.fillStyle = "#33ff99";
       ctx.fill();
-      ctx.strokeStyle = "#ffffffaa";
       ctx.stroke();
-      // eye
       ctx.beginPath();
       ctx.arc(turtle.x + Math.cos(angleRad) * 5.5, turtle.y + Math.sin(angleRad) * 5.5, 2.2, 0, Math.PI * 2);
       ctx.fillStyle = "#ffffff";
@@ -395,15 +419,13 @@
       ctx.restore();
     }
     
-    // clear screen and re-set background but keep drawing zone clean
     function clearCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawGrid();          // grid is always redrawn on clear
+      drawGrid();
       setupCanvasStyle();
       drawTurtleCursor();
     }
     
-    // move turtle with drawing (line thickness visible)
     function moveTurtle(distance) {
       const rad = turtle.angle * Math.PI / 180;
       const newX = turtle.x + Math.cos(rad) * distance;
@@ -418,12 +440,9 @@
       
       turtle.x = Math.min(Math.max(newX, 5), canvas.width - 5);
       turtle.y = Math.min(Math.max(newY, 5), canvas.height - 5);
-      
-      // redraw cursor after movement
       drawTurtleCursor();
     }
     
-    // Command executor
     function execCommand(cmd, val = null) {
       switch(cmd) {
         case "fd": if(val !== null) moveTurtle(val); break;
@@ -446,18 +465,15 @@
       return true;
     }
     
-    // console output
     function addConsoleLine(text) {
       const lineDiv = document.createElement("div");
       lineDiv.className = "line";
       lineDiv.textContent = text;
       consoleHistory.appendChild(lineDiv);
       consoleHistory.scrollTop = consoleHistory.scrollHeight;
-      // keep only last 200 lines for performance
       while(consoleHistory.children.length > 220) consoleHistory.removeChild(consoleHistory.firstChild);
     }
     
-    // ---------- ADVANCED TOKENIZER WITH NESTED REPEAT ----------
     function tokenizeLogo(input) {
       let processed = input.replace(/\[/g, ' [ ').replace(/\]/g, ' ] ');
       return processed.trim().split(/\s+/).filter(t => t.length > 0);
@@ -471,7 +487,6 @@
         const token = tokens[idx];
         
         if (token === "repeat") {
-          // repeat count [ ... ]
           if (idx + 2 >= limit) {
             addConsoleLine("repeat syntax error: missing count or bracket");
             return idx + 1;
@@ -506,7 +521,6 @@
           continue;
         }
         
-        // handle primitives with arguments
         const lower = token.toLowerCase();
         if (["fd", "bk", "rt", "lt"].includes(lower)) {
           if (idx + 1 >= limit) {
@@ -531,7 +545,7 @@
           continue;
         }
         
-        if (token === "]") break; // safety
+        if (token === "]") break;
         
         addConsoleLine(`unknown: ${token}`);
         idx++;
@@ -550,13 +564,10 @@
       } catch(e) {
         addConsoleLine(`ERROR: ${e.message}`);
       }
-      // after each command, refresh cursor and pen UI
       drawTurtleCursor();
       updatePenIndicator();
     }
     
-    // monitor resize of container for canvas
-    let resizeObserver = null;
     function attachCanvasResize() {
       const wrapper = document.querySelector(".canvas-wrapper");
       if (!wrapper) return;
@@ -567,9 +578,7 @@
         resizeCanvasAndCenter();
         turtle.angle = oldAngle;
         turtle.pen = oldPen;
-        // avoid weird reposition jumps
         if (oldX && oldY && canvas.width > 0 && canvas.height > 0) {
-          // keep proportional but don't overflow
           if (turtle.x < 10) turtle.x = 10;
           if (turtle.y < 10) turtle.y = 10;
           if (turtle.x > canvas.width - 10) turtle.x = canvas.width - 10;
@@ -583,31 +592,27 @@
       };
       window.addEventListener("resize", () => { setTimeout(resizeHandler, 20); });
       resizeHandler();
-      // also watch for any layout shift
       const obs = new ResizeObserver(() => resizeHandler());
       obs.observe(wrapper);
     }
     
-    // initialization: full setup + welcome
     function init() {
       attachCanvasResize();
       setupCanvasStyle();
-      // initial clear with grid
-      clearCanvas();      // this will draw grid and turtle
+      clearCanvas();
       turtle.x = canvas.width / 2;
       turtle.y = canvas.height / 2;
       turtle.angle = 0;
       turtle.pen = true;
-      drawGrid();        // ensure grid is drawn at start
+      drawGrid();
       drawTurtleCursor();
       updatePenIndicator();
       addConsoleLine("🐢 ONN LOGO ENGINE — READY");
-      addConsoleLine("✨ DRAWING AREA is ACTIVE — TRY: repeat 36 [fd 12 rt 10]");
-      addConsoleLine("🎨 type 'clear' to reset, 'home' to center turtle");
+      addConsoleLine("✨ DRAWING AREA ACTIVE — TRY: repeat 36 [fd 12 rt 10]");
+      addConsoleLine("🎨 type 'clear' to reset, 'home' to center");
       addConsoleLine("🔥 SOLID BRIGHT LINES — enhanced visibility!");
-      addConsoleLine("📐 GRID ALWAYS VISIBLE — reference grid shown by default");
+      addConsoleLine("📐 GRID ALWAYS VISIBLE");
       
-      // command listener
       cmdInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -618,25 +623,41 @@
         }
       });
       
-      // back button
+      // Mobile command buttons
+      const cmdBtns = document.querySelectorAll(".cmd-btn");
+      cmdBtns.forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const cmd = btn.dataset.cmd;
+          if (cmd) {
+            runLogoCommand(cmd);
+          }
+        });
+        btn.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          const cmd = btn.dataset.cmd;
+          if (cmd) {
+            runLogoCommand(cmd);
+          }
+        });
+      });
+      
       const backBtn = document.getElementById("backBtn");
       backBtn.addEventListener("click", (e) => {
         e.preventDefault();
         if (document.referrer && document.referrer.includes(window.location.host)) {
           window.history.back();
         } else {
-          addConsoleLine("← navigate to toys.html (demo fallback)");
+          addConsoleLine("← navigate to toys.html");
           window.location.href = "toys.html";
         }
       });
       
-      // extra demo: show canvas ready
       setTimeout(() => {
         drawTurtleCursor();
       }, 100);
     }
     
-    // start everything
     init();
   })();
 </script>
