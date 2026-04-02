@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -39,7 +38,7 @@ canvas{width:100%;max-height:85vh;border:2px solid #00ff00;}
 <script>
 (function(){
 
-const DRIVE_WAD = "https://drive.google.com/uc?export=download&id=1eNV7gy_WhUQHDxFfbofJCF8LZlIZe_Zf";
+const DRIVE_WAD = "freedoom.wad";
 
 const terminal=document.getElementById("terminal");
 const enter=document.getElementById("enterPrompt");
@@ -88,15 +87,25 @@ progress.innerText="Loading DOOM...";
 
 let canvas=document.getElementById("doomCanvas");
 
-window.Module={
-canvas:canvas,
-arguments:["-iwad",DRIVE_WAD],
-print:(t)=>console.log(t),
-printErr:(t)=>console.error(t)
+window.Module = window.Module || {};
+window.Module.canvas = canvas;
+window.Module.arguments = ["-iwad", DRIVE_WAD];
+window.Module.print = function(t) { console.log(t); };
+window.Module.printErr = function(t) { console.error(t); };
+window.Module.setStatus = function(text) {
+  if(progress) progress.innerText = text;
+  console.log("[STATUS]", text);
 };
 
 let script=document.createElement("script");
 script.src="doom.js";
+script.onload = function() {
+  console.log("doom.js loaded");
+};
+script.onerror = function() {
+  progress.innerText = "ERROR: Failed to load doom.js";
+  console.error("Failed to load doom.js");
+};
 document.body.appendChild(script);
 
 }
