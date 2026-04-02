@@ -19,7 +19,7 @@
       top: 0;
       left: 0;
       z-index: 0;
-      opacity: 0.15;
+      opacity: 1; /* 🔥 FULL VISIBILITY */
     }
 
     .wrapper {
@@ -42,8 +42,8 @@
       flex: 1;
       border: 1px solid rgba(0,255,100,0.3);
       padding: 15px;
-      background: rgba(0,0,0,0.5);
-      box-shadow: 0 0 15px rgba(0,255,100,0.1);
+      background: rgba(0,0,0,0.9); /* 🔥 DARKER */
+      box-shadow: 0 0 15px rgba(0,255,100,0.15);
       display: flex;
       flex-direction: column;
       overflow-y: auto;
@@ -69,8 +69,8 @@
       flex: 1;
       border: 1px solid rgba(0,255,100,0.3);
       padding: 15px;
-      background: rgba(0,0,0,0.5);
-      box-shadow: 0 0 15px rgba(0,255,100,0.1);
+      background: rgba(0,0,0,0.9); /* 🔥 DARKER */
+      box-shadow: 0 0 15px rgba(0,255,100,0.15);
       overflow-y: auto;
     }
 
@@ -79,7 +79,7 @@
       margin-bottom: 10px;
       border-left: 2px solid #33ff99;
       padding-left: 8px;
-      opacity: 0.85;
+      opacity: 0.9;
     }
 
     a {
@@ -142,8 +142,11 @@ let turtle = {
   pen: true
 };
 
+// 🔥 BRIGHT + GLOW
 ctx.strokeStyle = "#00ff88";
 ctx.lineWidth = 2;
+ctx.shadowColor = "#00ff88";
+ctx.shadowBlur = 10;
 
 // CONSOLE
 const input = document.getElementById("cmd");
