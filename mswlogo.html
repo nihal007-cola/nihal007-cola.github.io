@@ -298,6 +298,25 @@
       penStatusSpan.style.color = turtle.pen ? "#33ff99" : "#ffaa33";
     }
     
+    // Draw persistent grid overlay (always visible, not cleared by drawings)
+    function drawGrid() {
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.strokeStyle = "#33ff99";
+      ctx.lineWidth = 0.8;
+      for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    
     // Resize canvas and maintain drawing area (explicit drawing region)
     function resizeCanvasAndCenter() {
       const wrapper = document.querySelector(".canvas-wrapper");
@@ -319,6 +338,7 @@
       }
       // re-setup graphics context & redraw a small cursor to see turtle
       setupCanvasStyle();
+      drawGrid();          // persistent grid background
       drawTurtleCursor();
       window._prevW = canvas.width;
       window._prevH = canvas.height;
@@ -378,22 +398,7 @@
     // clear screen and re-set background but keep drawing zone clean
     function clearCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // draw a subtle grid (retro feel, but doesn't interfere) - minimal opacity
-      ctx.save();
-      ctx.globalAlpha = 0.09;
-      ctx.strokeStyle = "#33ff99";
-      ctx.lineWidth = 0.6;
-      for (let i = 0; i < canvas.width; i += 40) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, canvas.height);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(canvas.width, i);
-        ctx.stroke();
-      }
-      ctx.restore();
+      drawGrid();          // grid is always redrawn on clear
       setupCanvasStyle();
       drawTurtleCursor();
     }
@@ -587,18 +592,20 @@
     function init() {
       attachCanvasResize();
       setupCanvasStyle();
-      // initial clear with subtle grid
-      clearCanvas();
+      // initial clear with grid
+      clearCanvas();      // this will draw grid and turtle
       turtle.x = canvas.width / 2;
       turtle.y = canvas.height / 2;
       turtle.angle = 0;
       turtle.pen = true;
+      drawGrid();        // ensure grid is drawn at start
       drawTurtleCursor();
       updatePenIndicator();
       addConsoleLine("🐢 ONN LOGO ENGINE — READY");
       addConsoleLine("✨ DRAWING AREA is ACTIVE — TRY: repeat 36 [fd 12 rt 10]");
       addConsoleLine("🎨 type 'clear' to reset, 'home' to center turtle");
       addConsoleLine("🔥 SOLID BRIGHT LINES — enhanced visibility!");
+      addConsoleLine("📐 GRID ALWAYS VISIBLE — reference grid shown by default");
       
       // command listener
       cmdInput.addEventListener("keydown", (e) => {
