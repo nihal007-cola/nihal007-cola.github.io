@@ -214,80 +214,77 @@
       border-radius: 4px;
     }
 
-    /* Mobile specific styles */
-    .mobile-controls {
+    /* MOBILE CONTROLS - ALWAYS VISIBLE AND FUNCTIONAL */
+    .mobile-bottom-bar {
       display: none;
-      flex-direction: column;
-      background: rgba(0, 0, 0, 0.95);
+      background: #000000;
       border-top: 2px solid #33ff99;
       padding: 12px;
-      gap: 12px;
+      flex-direction: column;
+      gap: 10px;
       z-index: 20;
     }
     
-    .mobile-input-row {
+    .mobile-input-group {
       display: flex;
       gap: 10px;
-      align-items: center;
+      width: 100%;
     }
     
-    .mobile-input-field {
+    .mobile-input {
       flex: 1;
-      background: #000000;
+      background: #0a0f0a;
       border: 2px solid #33ff99;
-      padding: 12px;
       color: #33ff99;
-      font-family: monospace;
+      font-family: 'Courier New', monospace;
       font-size: 14px;
-      outline: none;
+      padding: 12px;
       border-radius: 10px;
+      outline: none;
       font-weight: bold;
     }
     
-    .mobile-input-field:focus {
-      box-shadow: 0 0 12px #33ff99;
+    .mobile-input:focus {
+      box-shadow: 0 0 15px #33ff99;
       background: #021a0a;
     }
     
-    .mobile-send {
+    .mobile-submit {
       background: #33ff99;
-      border: none;
       color: #000000;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
       font-family: monospace;
       font-weight: bold;
-      font-size: 16px;
-      padding: 12px 24px;
-      border-radius: 10px;
+      font-size: 14px;
       cursor: pointer;
-      touch-action: manipulation;
     }
     
-    .mobile-send:active {
+    .mobile-submit:active {
       transform: scale(0.95);
-      background: #88ffbb;
     }
     
-    .quick-buttons {
+    .quick-commands {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       justify-content: center;
     }
     
-    .quick-btn {
+    .quick-cmd {
       background: rgba(0, 0, 0, 0.8);
-      border: 1.5px solid #33ff99;
+      border: 1px solid #33ff99;
       color: #33ff99;
-      font-family: monospace;
-      font-weight: bold;
-      font-size: 13px;
       padding: 8px 14px;
       border-radius: 25px;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: bold;
       cursor: pointer;
-      touch-action: manipulation;
     }
     
-    .quick-btn:active {
+    .quick-cmd:active {
       background: #33ff99;
       color: #000000;
       transform: scale(0.95);
@@ -305,10 +302,8 @@
       .reference-panel { flex: 0.4; max-height: 100px; }
       .top-bar { padding: 8px 12px; }
       .logo-title { font-size: 0.85rem; }
-      
-      /* Hide desktop input, show mobile controls */
       .input-area { display: none; }
-      .mobile-controls { display: flex; }
+      .mobile-bottom-bar { display: flex; }
     }
   </style>
 </head>
@@ -348,25 +343,24 @@
       <div class="hint"><strong>home</strong> → reset</div>
       <div class="hint"><strong>clear</strong> → erase</div>
       <div class="hint"><strong>repeat 4 [fd 80 rt 90]</strong></div>
-      <div class="hint"><strong>repeat 36 [fd 12 rt 10]</strong> → circle</div>
     </div>
   </div>
 
-  <!-- Mobile Controls - Visible on touch devices -->
-  <div class="mobile-controls" id="mobileControls">
-    <div class="mobile-input-row">
-      <input type="text" id="mobileCmdInput" class="mobile-input-field" placeholder="Type command... fd 80 rt 90" spellcheck="false" enterkeyhint="send">
-      <button class="mobile-send" id="mobileSendBtn">RUN</button>
+  <!-- MOBILE BOTTOM BAR - CLEARLY VISIBLE -->
+  <div class="mobile-bottom-bar" id="mobileBar">
+    <div class="mobile-input-group">
+      <input type="text" id="mobileCommand" class="mobile-input" placeholder="Type command: fd 100, rt 90, repeat 4 [fd 50 rt 90]" spellcheck="false" enterkeyhint="send" autocomplete="off">
+      <button class="mobile-submit" id="mobileSubmit">RUN</button>
     </div>
-    <div class="quick-buttons">
-      <button class="quick-btn" data-cmd="fd 50">↑ FD 50</button>
-      <button class="quick-btn" data-cmd="bk 50">↓ BK 50</button>
-      <button class="quick-btn" data-cmd="rt 90">↻ RT 90</button>
-      <button class="quick-btn" data-cmd="lt 90">↺ LT 90</button>
-      <button class="quick-btn" data-cmd="pu">✏️ PU</button>
-      <button class="quick-btn" data-cmd="pd">✍️ PD</button>
-      <button class="quick-btn" data-cmd="home">🏠 HOME</button>
-      <button class="quick-btn" data-cmd="clear">🗑️ CLEAR</button>
+    <div class="quick-commands">
+      <button class="quick-cmd" data-cmd="fd 50">↑ FD 50</button>
+      <button class="quick-cmd" data-cmd="bk 50">↓ BK 50</button>
+      <button class="quick-cmd" data-cmd="rt 90">↻ RT 90</button>
+      <button class="quick-cmd" data-cmd="lt 90">↺ LT 90</button>
+      <button class="quick-cmd" data-cmd="pu">✏️ PU</button>
+      <button class="quick-cmd" data-cmd="pd">✍️ PD</button>
+      <button class="quick-cmd" data-cmd="home">🏠 HOME</button>
+      <button class="quick-cmd" data-cmd="clear">🗑️ CLEAR</button>
     </div>
   </div>
 </div>
@@ -393,8 +387,8 @@
     const consoleHistory = document.getElementById("consoleHistory");
     const penStatusSpan = document.getElementById("penStatus");
     const desktopCmd = document.getElementById("cmd");
-    const mobileCmdInput = document.getElementById("mobileCmdInput");
-    const mobileSendBtn = document.getElementById("mobileSendBtn");
+    const mobileCommand = document.getElementById("mobileCommand");
+    const mobileSubmit = document.getElementById("mobileSubmit");
     
     function updatePenIndicator() {
       penStatusSpan.innerText = turtle.pen ? "DOWN ✍️" : "UP ✏️";
@@ -505,8 +499,6 @@
       
       const move = moveQueue[0];
       const rad = move.angle * Math.PI / 180;
-      const stepX = Math.cos(rad) * STEP_SIZE;
-      const stepY = Math.sin(rad) * STEP_SIZE;
       let remaining = move.remainingDistance;
       let stepsThisFrame = Math.min(Math.ceil(remaining / STEP_SIZE), 2);
       
@@ -693,14 +685,6 @@
       updatePenIndicator();
     }
     
-    function processAndDismissKeyboard(inputElement, commandValue) {
-      if (commandValue && commandValue.trim() !== "") {
-        runLogoCommand(commandValue);
-      }
-      inputElement.value = "";
-      inputElement.blur();
-    }
-    
     function resizeCanvasAndCenter() {
       const wrapper = document.querySelector(".canvas-wrapper");
       const rect = wrapper.getBoundingClientRect();
@@ -771,8 +755,7 @@
       addConsoleLine("✨ SMOOTH ANIMATED DRAWING — continuous trails");
       addConsoleLine("🎨 type 'clear' to reset, 'home' to center turtle");
       addConsoleLine("🔥 NEON LINES with GLOW — enhanced visibility!");
-      addConsoleLine("📐 GRID ALWAYS VISIBLE");
-      addConsoleLine("📱 Mobile: Use input field or quick buttons below");
+      addConsoleLine("📱 Mobile: Type in the GREEN input box below");
       
       // Desktop command listener
       desktopCmd.addEventListener("keydown", (e) => {
@@ -785,33 +768,39 @@
         }
       });
       
-      // Mobile command input
-      mobileCmdInput.addEventListener("keydown", (e) => {
+      // MOBILE: Command input handler
+      mobileCommand.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          processAndDismissKeyboard(mobileCmdInput, mobileCmdInput.value);
+          const val = mobileCommand.value;
+          if (val && val.trim()) {
+            runLogoCommand(val);
+          }
+          mobileCommand.value = "";
+          mobileCommand.blur();
         }
       });
       
-      mobileSendBtn.addEventListener("click", (e) => {
+      mobileSubmit.addEventListener("click", (e) => {
         e.preventDefault();
-        processAndDismissKeyboard(mobileCmdInput, mobileCmdInput.value);
+        const val = mobileCommand.value;
+        if (val && val.trim()) {
+          runLogoCommand(val);
+        }
+        mobileCommand.value = "";
+        mobileCommand.blur();
       });
       
       // Quick command buttons
-      const quickBtns = document.querySelectorAll(".quick-btn");
+      const quickBtns = document.querySelectorAll(".quick-cmd");
       quickBtns.forEach(btn => {
         btn.addEventListener("click", (e) => {
           e.preventDefault();
           const cmd = btn.dataset.cmd;
           if (cmd) {
             runLogoCommand(cmd);
-            if (mobileCmdInput === document.activeElement) {
-              mobileCmdInput.blur();
-            }
-            if (desktopCmd === document.activeElement) {
-              desktopCmd.blur();
-            }
+            mobileCommand.blur();
+            desktopCmd.blur();
           }
         });
         btn.addEventListener("touchstart", (e) => {
@@ -819,9 +808,7 @@
           const cmd = btn.dataset.cmd;
           if (cmd) {
             runLogoCommand(cmd);
-            if (mobileCmdInput === document.activeElement) {
-              mobileCmdInput.blur();
-            }
+            mobileCommand.blur();
           }
         });
       });
