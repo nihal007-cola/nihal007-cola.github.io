@@ -91,21 +91,33 @@
       opacity: 1;
     }
     
-    .back-link {
+    /* Header row: back button to the right, title on left */
+    .header-row {
       position: relative;
       z-index: 2;
-      display: inline-block;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
       margin-bottom: 20px;
+    }
+    
+    .back-link {
       color: #33ff99;
       text-decoration: none;
       border-bottom: 1px solid #33ff99;
       padding-bottom: 2px;
       transition: all 0.2s;
+      display: inline-block;
     }
     
     .back-link:hover {
       text-shadow: 0 0 8px #33ff99;
       border-bottom-color: #33ff99;
+    }
+    
+    h2 {
+      margin: 0;
     }
   </style>
 </head>
@@ -114,9 +126,11 @@
 
 <canvas id="matrix"></canvas>
 
-<a href="index.html" class="back-link">← BACK</a>
-
-<h2>> TOYS</h2>
+<!-- Back button aligned to the right, index link remains functional -->
+<div class="header-row">
+  <h2>> TOYS</h2>
+  <a href="index.html" class="back-link">← BACK</a>
+</div>
 
 <div class="box">
   <a href="mswlogo.html">
@@ -145,14 +159,7 @@
   </a>
 </div>
 
-<div class="box">
-  <a href="playground.html">
-    <div class="title">SYSTEM PLAYGROUND</div>
-    <div class="desc">
-      Experimental layer. Small tools, ideas, and controlled chaos.
-    </div>
-  </a>
-</div>
+<!-- SYSTEM PLAYGROUND OPTION REMOVED - only three boxes remain -->
 
 <div id="transition"></div>
 
@@ -203,11 +210,12 @@ function draw() {
 setInterval(draw, 55);
 
 
-// TRANSITION
-const links = document.querySelectorAll("a:not(.back-link)");
+// TRANSITION for all links (including back button and all toy links)
+const links = document.querySelectorAll("a");
 
 links.forEach(link => {
   link.addEventListener("click", function(e) {
+    // Only handle internal navigation links (no target blank, and actual href)
     if (this.href && this.target !== "_blank") {
       e.preventDefault();
       const overlay = document.getElementById("transition");
@@ -219,22 +227,6 @@ links.forEach(link => {
     }
   });
 });
-
-// Also handle back link separately with transition
-const backLink = document.querySelector(".back-link");
-if (backLink) {
-  backLink.addEventListener("click", function(e) {
-    if (this.href && this.target !== "_blank") {
-      e.preventDefault();
-      const overlay = document.getElementById("transition");
-      overlay.classList.add("active");
-
-      setTimeout(() => {
-        window.location.href = this.href;
-      }, 300);
-    }
-  });
-}
 </script>
 
 </body>
