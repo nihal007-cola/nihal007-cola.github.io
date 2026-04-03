@@ -1,605 +1,200 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BRIC 999-in-1 HANDHELD</title>
-  <style>
-    * {
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      box-sizing: border-box;
-    }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Race</title>
 
-    body {
-      background: radial-gradient(circle at 20% 30%, #1a2a1a, #0a120a);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: 'Courier New', 'VT323', monospace;
-      margin: 0;
-      padding: 20px;
-    }
+<style>
+body {
+  margin:0;
+  background:#000;
+  color:#0f0;
+  font-family: monospace;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
 
-    /* CONSOLE BODY */
-    .console {
-      background: #2c2e2a;
-      border-radius: 48px 48px 60px 60px;
-      box-shadow: 0 20px 35px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,200,0.1);
-      padding: 24px 28px 40px 28px;
-      border-bottom: 8px solid #1e1f1b;
-    }
+/* Back button */
+.topbar {
+  width:100%;
+  padding:10px;
+}
+.back {
+  color:#0f0;
+  text-decoration:none;
+  border:1px solid #0f0;
+  padding:6px 12px;
+  border-radius:10px;
+}
 
-    .inner-console {
-      background: #20221e;
-      border-radius: 32px;
-      padding: 20px;
-      box-shadow: inset 0 0 0 2px #464a3e, 0 10px 20px rgba(0,0,0,0.3);
-    }
+/* Screen */
+canvas {
+  margin-top:10px;
+  background:#001100;
+  border:4px solid #0f0;
+  box-shadow:0 0 20px #0f0;
+}
 
-    /* LCD SCREEN */
-    .lcd {
-      background: #0b2f1f;
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: inset 0 0 0 4px #5a7c5a, 0 8px 12px rgba(0,0,0,0.4);
-      margin-bottom: 32px;
-      position: relative;
-    }
+/* Controls */
+.controls {
+  margin-top:20px;
+  display:grid;
+  grid-template-columns:repeat(3,80px);
+  gap:10px;
+}
 
-    .lcd-glow {
-      background: #1e3a2a;
-      border-radius: 14px;
-      padding: 8px;
-      box-shadow: 0 0 12px rgba(80,200,80,0.3), inset 0 0 8px rgba(160,255,160,0.2);
-    }
+button {
+  height:60px;
+  background:#000;
+  color:#0f0;
+  border:2px solid #0f0;
+  border-radius:10px;
+  font-size:18px;
+}
 
-    canvas {
-      display: block;
-      width: 100%;
-      max-width: 560px;
-      height: auto;
-      background: #0a1e12;
-      border-radius: 10px;
-      box-shadow: 0 0 0 2px #6e8f6a, 0 0 0 5px #2a472a;
-      image-rendering: crisp-edges;
-      image-rendering: pixelated;
-      image-rendering: pixelated;
-      cursor: pointer;
-    }
-
-    /* HUD inside canvas overlay? We draw hud inside canvas, but we also show extra stats */
-    .controls-panel {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 16px;
-    }
-
-    /* D-PAD & ACTION BUTTONS */
-    .dpad {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .dpad-row {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-    }
-
-    .ctrl-btn {
-      background: #2a2c26;
-      border: 3px solid #7eff6e;
-      border-radius: 18px;
-      width: 70px;
-      height: 70px;
-      font-size: 28px;
-      font-weight: bold;
-      color: #b9ffa5;
-      text-shadow: 0 0 3px #00aa33;
-      box-shadow: 0 5px 0 #0f2a0f;
-      transition: all 0.05s linear;
-      text-align: center;
-      line-height: 68px;
-      font-family: monospace;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    .action-btn {
-      background: #2a2c26;
-      border: 3px solid #ffb347;
-      border-radius: 40px;
-      width: 85px;
-      height: 85px;
-      font-size: 26px;
-      font-weight: bold;
-      color: #ffdd99;
-      box-shadow: 0 5px 0 #5e3a1a;
-    }
-
-    .ctrl-btn:active, .action-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 2px 0 #0f2a0f;
-      background: #4c6e3c;
-    }
-
-    .btn-start {
-      background: #2c3e2a;
-      border-color: #ffcc44;
-      width: 100px;
-      font-size: 22px;
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 10px;
-    }
-
-    .back-top {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background: #000000aa;
-      backdrop-filter: blur(6px);
-      padding: 10px 18px;
-      border-radius: 60px;
-      border: 1px solid #88ff88;
-      color: #aaffaa;
-      font-weight: bold;
-      font-size: 1.2rem;
-      text-decoration: none;
-      font-family: monospace;
-      z-index: 999;
-      transition: 0.1s linear;
-    }
-
-    .back-top:hover {
-      background: #2a6e2a;
-      color: white;
-    }
-
-    @media (max-width: 620px) {
-      .ctrl-btn { width: 55px; height: 55px; line-height: 52px; font-size: 22px; }
-      .action-btn { width: 70px; height: 70px; font-size: 22px; }
-      .console { padding: 12px 16px 28px 16px; }
-    }
-  </style>
+button:active {
+  background:#0f0;
+  color:#000;
+}
+</style>
 </head>
+
 <body>
-<a href="toys.html" class="back-top" id="backBtn">◀ BACK</a>
-<div class="console">
-  <div class="inner-console">
-    <div class="lcd">
-      <div class="lcd-glow">
-        <canvas id="gameCanvas" width="560" height="400" style="width:100%; height:auto; max-width:560px; aspect-ratio:560/400"></canvas>
-      </div>
-    </div>
-    <div class="controls-panel">
-      <div class="dpad">
-        <div class="dpad-row"><div class="ctrl-btn" data-key="ArrowUp">▲</div></div>
-        <div class="dpad-row">
-          <div class="ctrl-btn" data-key="ArrowLeft">◀</div>
-          <div class="ctrl-btn" data-key="ArrowDown">▼</div>
-          <div class="ctrl-btn" data-key="ArrowRight">▶</div>
-        </div>
-      </div>
-      <div class="btn-group">
-        <div class="ctrl-btn action-btn" data-key="Space">⚡FIRE</div>
-        <div class="ctrl-btn btn-start" data-key="Enter">START</div>
-        <div class="ctrl-btn" data-key="Escape">MENU</div>
-      </div>
-    </div>
-    <div style="text-align:center; margin-top:18px; font-size:12px; color:#8bc34a; letter-spacing:2px;">BRIC 999-in-1 // PIXEL PERFECT</div>
-  </div>
+
+<div class="topbar">
+  <a href="toys.html" class="back">← BACK</a>
+</div>
+
+<canvas id="game" width="240" height="400"></canvas>
+
+<div class="controls">
+  <button data-key="left">←</button>
+  <button data-key="up">↑</button>
+  <button data-key="right">→</button>
+  <button data-key="left">←</button>
+  <button data-key="down">↓</button>
+  <button data-key="right">→</button>
 </div>
 
 <script>
-  (function(){
-    // ---------- APP STATES ----------
-    const STATES = { BOOT:0, MENU:1, GAME_SELECT:2, LEVEL_SELECT:3, PLAYING:4, GAME_OVER:5 };
-    let currentState = STATES.BOOT;
-    let selectedGameIndex = 0;      // 0..7 base games
-    let gameNumberDisplay = 1;       // 1..99 simulated
-    let currentLevel = 1;
-    let highScore = 0;
-    let currentScore = 0;
-    let currentGameEngine = null;    // active game object
-    let animationId = null;
-    let frameInterval = null;
-    let gameLoopActive = false;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-    // canvas
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 560; canvas.height = 400;
+const W = canvas.width;
+const H = canvas.height;
 
-    // ---------- LOAD HIGH SCORE ----------
-    try{
-      let saved = localStorage.getItem('bric_highscore');
-      if(saved && !isNaN(parseInt(saved))) highScore = parseInt(saved);
-    }catch(e){}
+let input = {left:false,right:false,up:false,down:false};
 
-    // ----- SOUND (simple beep)
-    function beep(freq=660, duration=80){
-      try{
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        gain.gain.value = 0.2;
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration/1000);
-        osc.stop(audioCtx.currentTime + duration/1000);
-      }catch(e){}
-    }
+document.addEventListener("keydown",e=>{
+  if(["ArrowLeft","KeyA"].includes(e.code)) input.left=true;
+  if(["ArrowRight","KeyD"].includes(e.code)) input.right=true;
+  if(["ArrowUp","KeyW"].includes(e.code)) input.up=true;
+  if(["ArrowDown","KeyS"].includes(e.code)) input.down=true;
+  e.preventDefault();
+});
 
-    // ----- UTILITY: Save high score
-    function updateHighScore(){
-      if(currentScore > highScore){
-        highScore = currentScore;
-        localStorage.setItem('bric_highscore', highScore);
-        beep(880,70);
-      }
-    }
+document.addEventListener("keyup",e=>{
+  if(["ArrowLeft","KeyA"].includes(e.code)) input.left=false;
+  if(["ArrowRight","KeyD"].includes(e.code)) input.right=false;
+  if(["ArrowUp","KeyW"].includes(e.code)) input.up=false;
+  if(["ArrowDown","KeyS"].includes(e.code)) input.down=false;
+});
 
-    // ---------- GAME DEFINITIONS (8 base games) ----------
-    // Each game implements: init(level), update(keys), draw(ctx, w, h), getScore(), isGameOver(), getLevelUp? optional
-    // also step() returns boolean: true if game continues, false game over
-    // We'll manage generic grid or custom drawing
-    
-    // 1. SNAKE
-    class SnakeGame {
-      constructor(){
-        this.cellSize=20;
-        this.gridW=28; this.gridH=20;
-        this.snake=null; this.dir='RIGHT'; this.nextDir='RIGHT'; this.food=null; this.gameOver=false; this.score=0;
-      }
-      init(level){
-        this.score=0;
-        this.gameOver=false;
-        this.dir='RIGHT'; this.nextDir='RIGHT';
-        this.snake = [[10,10],[9,10],[8,10],[7,10]];
-        this.spawnFood();
-      }
-      spawnFood(){
-        let free=false;
-        while(!free){
-          let fx=Math.floor(Math.random()*this.gridW);
-          let fy=Math.floor(Math.random()*this.gridH);
-          if(!this.snake.some(seg=>seg[0]===fx && seg[1]===fy)){
-            this.food=[fx,fy]; free=true;
-          }
-        }
-      }
-      update(keys){
-        if(this.gameOver) return false;
-        if(keys.ArrowLeft && this.dir!=='RIGHT') this.nextDir='LEFT';
-        if(keys.ArrowRight && this.dir!=='LEFT') this.nextDir='RIGHT';
-        if(keys.ArrowUp && this.dir!=='DOWN') this.nextDir='UP';
-        if(keys.ArrowDown && this.dir!=='UP') this.nextDir='DOWN';
-        this.dir = this.nextDir;
-        let head = this.snake[0];
-        let newHead = [...head];
-        if(this.dir==='RIGHT') newHead[0]++;
-        if(this.dir==='LEFT') newHead[0]--;
-        if(this.dir==='UP') newHead[1]--;
-        if(this.dir==='DOWN') newHead[1]++;
-        // check collision walls
-        if(newHead[0]<0 || newHead[0]>=this.gridW || newHead[1]<0 || newHead[1]>=this.gridH){
-          this.gameOver=true; return false;
-        }
-        let ate=false;
-        if(this.food && newHead[0]===this.food[0] && newHead[1]===this.food[1]){
-          ate=true;
-          this.score+=10;
-          this.spawnFood();
-        }
-        this.snake.unshift(newHead);
-        if(!ate) this.snake.pop();
-        // self collision
-        for(let i=1;i<this.snake.length;i++){
-          if(this.snake[i][0]===newHead[0] && this.snake[i][1]===newHead[1]){ this.gameOver=true; return false;}
-        }
-        return true;
-      }
-      draw(ctx,w,h){
-        ctx.fillStyle="#172e1a";
-        ctx.fillRect(0,0,w,h);
-        let cellW=w/this.gridW, cellH=h/this.gridH;
-        for(let seg of this.snake){
-          ctx.fillStyle="#88ff88";
-          ctx.fillRect(seg[0]*cellW, seg[1]*cellH, cellW-1, cellH-1);
-        }
-        if(this.food){
-          ctx.fillStyle="#ffaa66";
-          ctx.fillRect(this.food[0]*cellW, this.food[1]*cellH, cellW-1, cellH-1);
-        }
-      }
-      getScore(){ return this.score; }
-      isGameOver(){ return this.gameOver; }
+document.querySelectorAll("button").forEach(btn=>{
+  btn.addEventListener("touchstart",()=>input[btn.dataset.key]=true);
+  btn.addEventListener("touchend",()=>input[btn.dataset.key]=false);
+  btn.addEventListener("mousedown",()=>input[btn.dataset.key]=true);
+  btn.addEventListener("mouseup",()=>input[btn.dataset.key]=false);
+});
+
+let player = {x:120,y:340,w:20,h:30};
+let enemies = [];
+let speed = 2;
+let score = 0;
+
+function spawnEnemy(){
+  enemies.push({
+    x:Math.random()*200,
+    y:-40,
+    w:20,
+    h:30
+  });
+}
+
+function update(){
+  if(input.left) player.x -= 4;
+  if(input.right) player.x += 4;
+
+  player.x = Math.max(0, Math.min(W-20, player.x));
+
+  if(Math.random()<0.03) spawnEnemy();
+
+  enemies.forEach(e=> e.y += speed);
+
+  enemies = enemies.filter(e=>{
+    if(e.y > H) return false;
+
+    // collision
+    if(
+      player.x < e.x + e.w &&
+      player.x + player.w > e.x &&
+      player.y < e.y + e.h &&
+      player.y + player.h > e.y
+    ){
+      alert("GAME OVER\nScore: "+score);
+      location.reload();
     }
 
-    // 2. BLOCK (falling pieces generic)
-    class BlockGame {
-      constructor(){ this.gridW=12; this.gridH=20; this.board=Array(20).fill().map(()=>Array(12).fill(0)); this.piece=null; this.score=0; this.gameOver=false; }
-      init(level){
-        this.board=Array(20).fill().map(()=>Array(12).fill(0));
-        this.score=0; this.gameOver=false; this.spawnPiece();
-      }
-      spawnPiece(){
-        const shapes=[[[1,1,1,1]], [[1,1],[1,1]], [[0,1,0],[1,1,1]], [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]]];
-        let idx=Math.floor(Math.random()*shapes.length);
-        this.piece={ shape:shapes[idx], x:Math.floor((12-shapes[idx][0].length)/2), y:0 };
-        if(this.collision()) this.gameOver=true;
-      }
-      collision(){
-        for(let i=0;i<this.piece.shape.length;i++)
-          for(let j=0;j<this.piece.shape[0].length;j++)
-            if(this.piece.shape[i][j] && (this.piece.y+i>=20 || this.piece.x+j<0 || this.piece.x+j>=12 || this.board[this.piece.y+i][this.piece.x+j])) return true;
-        return false;
-      }
-      merge(){
-        for(let i=0;i<this.piece.shape.length;i++)
-          for(let j=0;j<this.piece.shape[0].length;j++)
-            if(this.piece.shape[i][j]) this.board[this.piece.y+i][this.piece.x+j]=1;
-        this.clearLines();
-        this.spawnPiece();
-      }
-      clearLines(){
-        let cleared=0;
-        for(let row=19;row>=0;row--){
-          if(this.board[row].every(c=>c===1)){
-            this.board.splice(row,1);
-            this.board.unshift(Array(12).fill(0));
-            row++; cleared++;
-          }
-        }
-        this.score+=cleared*100;
-      }
-      update(keys){
-        if(this.gameOver) return false;
-        if(keys.ArrowLeft) { this.piece.x--; if(this.collision()) this.piece.x++; }
-        if(keys.ArrowRight) { this.piece.x++; if(this.collision()) this.piece.x--; }
-        if(keys.ArrowUp) { let rotated=this.rotatePiece(); let old=this.piece.shape; this.piece.shape=rotated; if(this.collision()) this.piece.shape=old; }
-        if(keys.Space || keys.ArrowDown){
-          this.piece.y++;
-          if(this.collision()){ this.piece.y--; this.merge(); }
-        }
-        // auto fall
-        this.piece.y++;
-        if(this.collision()){ this.piece.y--; this.merge(); }
-        return !this.gameOver;
-      }
-      rotatePiece(){
-        let shape=this.piece.shape;
-        return shape[0].map((_,idx)=>shape.map(row=>row[idx]).reverse());
-      }
-      draw(ctx,w,h){
-        ctx.fillStyle="#121c12";
-        ctx.fillRect(0,0,w,h);
-        let cellW=w/12, cellH=h/20;
-        for(let i=0;i<20;i++) for(let j=0;j<12;j++) if(this.board[i][j]){ ctx.fillStyle="#66cc66"; ctx.fillRect(j*cellW,i*cellH,cellW-1,cellH-1);}
-        if(this.piece){
-          for(let i=0;i<this.piece.shape.length;i++)
-            for(let j=0;j<this.piece.shape[0].length;j++)
-              if(this.piece.shape[i][j]){ ctx.fillStyle="#ffcc88"; ctx.fillRect((this.piece.x+j)*cellW,(this.piece.y+i)*cellH,cellW-1,cellH-1);}
-        }
-      }
-      getScore(){ return this.score; }
-      isGameOver(){ return this.gameOver; }
-    }
+    return true;
+  });
 
-    // 3. Racing (car dodge)
-    class RacingGame {
-      constructor(){ this.x=4; this.lanes=7; this.obstacles=[]; this.score=0; this.frame=0; this.gameOver=false; }
-      init(){ this.x=3; this.obstacles=[]; this.score=0; this.frame=0; this.gameOver=false; }
-      update(keys){
-        if(this.gameOver) return false;
-        if(keys.ArrowLeft && this.x>0) this.x--;
-        if(keys.ArrowRight && this.x<6) this.x++;
-        this.frame++;
-        if(this.frame%25===0){
-          let lane=Math.floor(Math.random()*7);
-          this.obstacles.push({lane:lane, y:0});
-        }
-        for(let i=0;i<this.obstacles.length;i++){
-          this.obstacles[i].y+=3;
-          if(this.obstacles[i].y>15 && this.obstacles[i].lane===this.x){ this.gameOver=true; return false;}
-        }
-        this.obstacles=this.obstacles.filter(o=>o.y<18);
-        this.score = Math.floor(this.frame/10);
-        return true;
-      }
-      draw(ctx,w,h){
-        ctx.fillStyle="#172017";
-        ctx.fillRect(0,0,w,h);
-        let laneW=w/7, cellH=h/20;
-        for(let i=0;i<this.obstacles.length;i++){
-          ctx.fillStyle="#dd4444";
-          ctx.fillRect(this.obstacles[i].lane*laneW, this.obstacles[i].y*cellH, laneW-4, cellH-2);
-        }
-        ctx.fillStyle="#88ff88";
-        ctx.fillRect(this.x*laneW, h-50, laneW-4, 30);
-      }
-      getScore(){ return this.score; }
-      isGameOver(){ return this.gameOver; }
-    }
+  score++;
+}
 
-    // we'll implement 5 more quickly with same API
-    class ShooterGame { constructor(){ this.x=4; this.bullets=[]; this.enemies=[]; score=0; gameOver=false; frame=0; }
-      init(){ this.x=4; this.bullets=[]; this.enemies=[]; this.score=0; this.gameOver=false; this.frame=0;}
-      update(keys){
-        if(keys.ArrowLeft&&this.x>0) this.x--;
-        if(keys.ArrowRight&&this.x<9) this.x++;
-        if(keys.Space && this.frame%8===0) this.bullets.push({x:this.x, y:16});
-        this.frame++;
-        if(this.frame%20===0) this.enemies.push({x:Math.floor(Math.random()*10), y:0});
-        for(let b of this.bullets){ b.y-=3; }
-        for(let e of this.enemies){ e.y+=1.2; }
-        for(let i=0;i<this.bullets.length;i++) for(let j=0;j<this.enemies.length;j++){
-          if(Math.abs(this.bullets[i].x-this.enemies[j].x)<1 && Math.abs(this.bullets[i].y-this.enemies[j].y)<1){
-            this.bullets.splice(i,1); this.enemies.splice(j,1); this.score+=10; i--; break;
-          }
-        }
-        for(let e of this.enemies) if(e.y>17){ this.gameOver=true; }
-        this.bullets=this.bullets.filter(b=>b.y>0);
-        return !this.gameOver;
-      }
-      draw(ctx,w,h){ ctx.fillStyle="#111"; ctx.fillRect(0,0,w,h); let cellW=w/10; let cellH=h/18;
-        ctx.fillStyle="#88ff88"; ctx.fillRect(this.x*cellW, h-40, cellW-2, 20);
-        for(let b of this.bullets) { ctx.fillStyle="cyan"; ctx.fillRect(b.x*cellW, b.y*cellH, 4, 8); }
-        for(let e of this.enemies) { ctx.fillStyle="#ff7777"; ctx.fillRect(e.x*cellW, e.y*cellH, cellW-2, cellH-2); }
-      }
-      getScore(){ return this.score; } isGameOver(){ return this.gameOver; }
-    }
-    class BreakoutGame { constructor(){ this.paddleX=0; this.ball={x:0,y:0,dx:2,dy:-2}; this.bricks=[]; score=0; gameOver=false; }
-      init(){ this.paddleX=6; this.ball={x:7,y:15,dx:2,dy:-2}; this.bricks=[]; for(let i=0;i<6;i++) for(let j=0;j<8;j++) this.bricks.push({x:j,y:i,active:true}); this.score=0; this.gameOver=false;}
-      update(keys){ if(keys.ArrowLeft) this.paddleX=Math.max(0,this.paddleX-0.6); if(keys.ArrowRight) this.paddleX=Math.min(13,this.paddleX+0.6);
-        this.ball.x+=this.ball.dx; this.ball.y+=this.ball.dy;
-        if(this.ball.x<=0||this.ball.x>=14) this.ball.dx*=-1; if(this.ball.y<=0) this.ball.dy*=-1;
-        if(this.ball.y>=17){ if(this.ball.y>=17.5) this.gameOver=true; else if(Math.abs(this.ball.x-this.paddleX)<1.5) this.ball.dy*=-1; }
-        for(let b of this.bricks){ if(b.active && this.ball.x>=b.x && this.ball.x<=b.x+1 && this.ball.y>=b.y && this.ball.y<=b.y+0.8){ b.active=false; this.ball.dy*=-1; this.score+=10; }}
-        return !this.gameOver;
-      }
-      draw(ctx,w,h){ ctx.fillStyle="#111"; ctx.fillRect(0,0,w,h); let cw=w/14, ch=h/18; for(let b of this.bricks) if(b.active){ ctx.fillStyle="#ffaa66"; ctx.fillRect(b.x*cw, b.y*ch, cw-2, ch-2); } ctx.fillStyle="#aaffaa"; ctx.fillRect(this.paddleX*cw, h-30, cw*2, 10); ctx.fillStyle="white"; ctx.fillRect(this.ball.x*cw, this.ball.y*ch, 6,6);}
-      getScore(){ return this.score; } isGameOver(){ return this.gameOver; }
-    }
-    // falling dodge, stack builder, maze runner - simplified but fully working
-    class FallingDodge { constructor(){ this.x=3; this.fallers=[]; score=0; gameOver=false; frame=0; } init(){ this.x=3; this.fallers=[]; this.score=0; this.gameOver=false; } update(keys){ if(keys.ArrowLeft&&this.x>0) this.x--; if(keys.ArrowRight&&this.x<9) this.x++; this.frame++; if(this.frame%15===0) this.fallers.push({x:Math.floor(Math.random()*10), y:0}); for(let f of this.fallers) f.y+=2; for(let f of this.fallers) if(f.y>17 && Math.abs(f.x-this.x)<1) this.gameOver=true; this.fallers=this.fallers.filter(f=>f.y<18); this.score=Math.floor(this.frame/10); return !this.gameOver; } draw(ctx,w,h){ ctx.fillStyle="#111"; ctx.fillRect(0,0,w,h); let cw=w/10, ch=h/18; ctx.fillStyle="#88ff88"; ctx.fillRect(this.x*cw, h-40, cw-2, 20); for(let f of this.fallers){ ctx.fillStyle="#ff6666"; ctx.fillRect(f.x*cw, f.y*ch, cw-2, ch-2); } } getScore(){ return this.score; } isGameOver(){ return this.gameOver; } }
-    class StackBuilder { constructor(){ this.stack=[]; this.currentX=0; this.dir=1; this.score=0; this.gameOver=false; this.width=8; } init(){ this.stack=[]; this.currentX=4; this.dir=1; this.width=8; this.score=0; this.gameOver=false; } update(keys){ this.currentX+=this.dir*0.35; if(this.currentX<0||this.currentX>12-this.width){ this.dir*=-1; this.currentX=Math.min(12-this.width, Math.max(0,this.currentX)); } if(keys.Space){ let newWidth=Math.max(0, this.width - Math.abs(this.stack[this.stack.length-1]?.x - this.currentX)); if(newWidth<=0) this.gameOver=true; else { this.stack.push({x:this.currentX, w:this.width}); this.width=newWidth; this.score+=100; if(this.stack.length>8) this.gameOver=true; } } return !this.gameOver; } draw(ctx,w,h){ let cw=w/12, ch=h/12; for(let i=0;i<this.stack.length;i++){ ctx.fillStyle="#66cc88"; ctx.fillRect(this.stack[i].x*cw, (10-i)*ch, this.stack[i].w*cw-2, ch-2); } ctx.fillStyle="#ffcc88"; ctx.fillRect(this.currentX*cw, (10-this.stack.length)*ch, this.width*cw-2, ch-2); } getScore(){ return this.score; } isGameOver(){ return this.gameOver; } }
-    class MazeRunner { constructor(){ this.x=1; this.y=1; this.goal=false; this.maze=null; this.gameOver=false; this.score=0; } init(){ this.x=1; this.y=1; this.maze=Array(12).fill().map(()=>Array(16).fill(0)); for(let i=0;i<16;i++) this.maze[0][i]=1; for(let i=0;i<12;i++) this.maze[i][0]=1; for(let i=0;i<12;i++) this.maze[i][15]=1; for(let i=0;i<16;i++) this.maze[11][i]=1; this.maze[10][14]=2; this.goal=false; this.gameOver=false; this.score=0; } update(keys){ let nx=this.x, ny=this.y; if(keys.ArrowUp) ny--; if(keys.ArrowDown) ny++; if(keys.ArrowLeft) nx--; if(keys.ArrowRight) nx++; if(this.maze[nx] && this.maze[nx][ny]!==1){ this.x=nx; this.y=ny; } if(this.maze[this.x][this.y]===2) this.goal=true; if(this.goal) this.score=Math.max(this.score,100); return !this.gameOver && !this.goal; } draw(ctx,w,h){ ctx.fillStyle="#171717"; ctx.fillRect(0,0,w,h); let cw=w/12, ch=h/16; for(let i=0;i<12;i++) for(let j=0;j<16;j++) if(this.maze[i][j]===1){ ctx.fillStyle="#3a6e3a"; ctx.fillRect(i*cw, j*ch, cw-1, ch-1); } ctx.fillStyle="#ffaa88"; ctx.fillRect(this.x*cw, this.y*ch, cw-1, ch-1); if(this.maze[10][14]===2){ ctx.fillStyle="gold"; ctx.fillRect(10*cw,14*ch, cw-1, ch-1); } } getScore(){ return this.score; } isGameOver(){ return this.gameOver||this.goal; } }
+function drawMatrixBackground(){
+  ctx.fillStyle = "rgba(0,20,0,0.3)";
+  ctx.fillRect(0,0,W,H);
 
-    const GAMES_LIST = [SnakeGame, BlockGame, RacingGame, ShooterGame, BreakoutGame, FallingDodge, StackBuilder, MazeRunner];
-    const GAME_NAMES = ["SNAKE","BLOCKS","RACING","SHOOTER","BREAKOUT","DODGE","STACK","MAZE"];
-    
-    function getGameInstance(idx, level){
-      let GameClass = GAMES_LIST[idx];
-      let inst = new GameClass();
-      inst.init(level);
-      return inst;
-    }
-    
-    // ---- global game loop manager
-    let activeGame = null;
-    let currentKeys = { ArrowLeft:false, ArrowRight:false, ArrowUp:false, ArrowDown:false, Space:false, Enter:false, Escape:false };
-    
-    function gameLoop(){
-      if(currentState !== STATES.PLAYING || !activeGame) return;
-      let moved = activeGame.update(currentKeys);
-      currentScore = activeGame.getScore();
-      if(activeGame.isGameOver() || !moved){
-        updateHighScore();
-        currentState = STATES.GAME_OVER;
-        beep(300,200);
-      }
-      drawFullUI();
-    }
-    
-    function drawFullUI(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      if(currentState === STATES.MENU || currentState === STATES.GAME_SELECT){
-        drawMenu();
-      } else if(currentState === STATES.PLAYING && activeGame){
-        activeGame.draw(ctx, canvas.width, canvas.height);
-        ctx.font="bold 20px monospace"; ctx.fillStyle="#bbffaa"; ctx.shadowBlur=0;
-        ctx.fillText("SCORE:"+currentScore, 10,30);
-        ctx.fillText("LV:"+currentLevel, canvas.width-80,30);
-        ctx.fillText("#"+String(gameNumberDisplay).padStart(3,'0'), canvas.width/2-30,30);
-      } else if(currentState === STATES.GAME_OVER){
-        drawMenu(); // fallback menu style
-        ctx.fillStyle="#ffaa88"; ctx.font="26px monospace"; ctx.fillText("GAME OVER", canvas.width/2-80,canvas.height/2);
-        ctx.font="16px monospace"; ctx.fillText("PRESS START", canvas.width/2-60,canvas.height/2+50);
-      } else if(currentState === STATES.BOOT){
-        ctx.fillStyle="#0a3a0a"; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle="#88ff88"; ctx.font="24px monospace"; ctx.fillText("BRIC 999-in-1", canvas.width/2-100,canvas.height/2);
-        setTimeout(()=>{ currentState=STATES.MENU; drawFullUI(); },800);
-      }
-      // HUD always
-      if(currentState===STATES.MENU){
-        ctx.fillStyle="#c0ffb0"; ctx.font="12px monospace"; ctx.fillText("HIGH:"+highScore,10,canvas.height-10);
-      }
-    }
-    
-    function drawMenu(){
-      ctx.fillStyle="#0a2412"; ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle="#b3ffa7"; ctx.font="20px monospace";
-      for(let i=0;i<8;i++){
-        let prefix = (selectedGameIndex===i) ? ">" : " ";
-        let showNum = (gameNumberDisplay - (gameNumberDisplay%8) + i + 1);
-        let name = GAME_NAMES[i];
-        ctx.fillText(`${prefix} ${String(showNum).padStart(2,'0')} ${name}`, 30, 60+i*32);
-      }
-      ctx.fillStyle="#ffee99"; ctx.font="16px monospace";
-      ctx.fillText("HIGH SCORE:"+highScore, 30, canvas.height-70);
-      ctx.fillText("CURRENT LV:"+currentLevel, 30, canvas.height-40);
-    }
-    
-    function startGame(){
-      let baseIdx = selectedGameIndex;
-      let variation = Math.floor((gameNumberDisplay-1)/8);
-      let level = (variation % 10)+1;
-      currentLevel = level;
-      activeGame = getGameInstance(baseIdx, currentLevel);
-      currentScore = 0;
-      currentState = STATES.PLAYING;
-      if(animationId) cancelAnimationFrame(animationId);
-      function frame(){
-        gameLoop();
-        animationId = requestAnimationFrame(frame);
-      }
-      animationId = requestAnimationFrame(frame);
-    }
-    
-    function handleKey(e, value){
-      let key = e.key;
-      if(key===' '||key==='Space') key='Space';
-      if(key==='Enter') key='Enter';
-      if(key==='Escape') key='Escape';
-      if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter','Escape'].includes(key)) currentKeys[key]=value;
-      if(value && (key==='ArrowUp'||key==='ArrowDown'||key==='ArrowLeft'||key==='ArrowRight'||key==='w'||key==='s'||key==='a'||key==='d')){
-        if(key==='w') currentKeys.ArrowUp=true;
-        if(key==='s') currentKeys.ArrowDown=true;
-        if(key==='a') currentKeys.ArrowLeft=true;
-        if(key==='d') currentKeys.ArrowRight=true;
-      }
-      if(value && (key==='Enter')){
-        if(currentState===STATES.MENU) startGame();
-        else if(currentState===STATES.GAME_OVER) { currentState=STATES.MENU; drawFullUI(); }
-      }
-      if(value && key==='Escape') { currentState=STATES.MENU; drawFullUI(); }
-      if(value && currentState===STATES.MENU && (key==='ArrowUp')) selectedGameIndex = (selectedGameIndex-1+8)%8;
-      if(value && currentState===STATES.MENU && (key==='ArrowDown')) selectedGameIndex = (selectedGameIndex+1)%8;
-      if(value && currentState===STATES.MENU && (key==='ArrowLeft')) gameNumberDisplay = Math.max(1, gameNumberDisplay-1);
-      if(value && currentState===STATES.MENU && (key==='ArrowRight')) gameNumberDisplay = Math.min(99, gameNumberDisplay+1);
-      if(value && key==='Space' && currentState===STATES.MENU) startGame();
-      e.preventDefault();
-    }
-    
-    window.addEventListener('keydown',(e)=>{ handleKey(e,true); if(e.key===' '||e.key==='Space'||e.key==='ArrowUp') e.preventDefault(); });
-    window.addEventListener('keyup',(e)=>{ handleKey(e,false); });
-    document.querySelectorAll('.ctrl-btn').forEach(btn=>{
-      let key = btn.dataset.key;
-      btn.addEventListener('mousedown',()=>{ handleKey({key:key,preventDefault:()=>{}},true); beep(440,30); });
-      btn.addEventListener('mouseup',()=>{ handleKey({key:key,preventDefault:()=>{}},false); });
-      btn.addEventListener('touchstart',(e)=>{ e.preventDefault(); handleKey({key:key,preventDefault:()=>{}},true); beep(440,30); });
-      btn.addEventListener('touchend',()=>{ handleKey({key:key,preventDefault:()=>{}},false); });
-    });
-    drawFullUI();
-    currentState=STATES.MENU;
-    drawFullUI();
-  })();
+  ctx.fillStyle="#0f0";
+  for(let i=0;i<20;i++){
+    ctx.fillText(
+      Math.random()>0.5?"1":"0",
+      Math.random()*W,
+      Math.random()*H
+    );
+  }
+}
+
+function draw(){
+  drawMatrixBackground();
+
+  // player
+  ctx.fillStyle="#0f0";
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+
+  // enemies
+  enemies.forEach(e=>{
+    ctx.fillStyle="#0f0";
+    ctx.fillRect(e.x,e.y,e.w,e.h);
+  });
+
+  // score
+  ctx.fillText("SCORE:"+score,10,20);
+}
+
+let last=0;
+function loop(t){
+  if(t-last>16){
+    update();
+    draw();
+    last=t;
+  }
+  requestAnimationFrame(loop);
+}
+
+loop();
 </script>
+
 </body>
 </html>
