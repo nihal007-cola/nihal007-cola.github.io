@@ -40,14 +40,12 @@
       margin-bottom: 10px;
     }
 
-    /* existing terminal p style preserved */
     .terminal p {
       margin: 4px 0;
       font-size: 14px;
       text-shadow: 0 0 5px rgba(0,255,100,0.4);
     }
 
-    /* FIXED HEIGHT terminal container - prevents layout shift */
     #dynamic-terminal {
       font-family: monospace;
       color: #33ff99;
@@ -55,7 +53,6 @@
       margin-bottom: 24px;
       background: transparent;
       text-shadow: 0 0 5px rgba(0,255,100,0.4);
-      /* CRITICAL: Fixed height to reserve space BEFORE animation starts */
       min-height: 180px;
       height: 180px;
       overflow: hidden;
@@ -72,7 +69,6 @@
       line-height: 1.4;
     }
 
-    /* Blinking class - toggles opacity for terminal effect */
     .blink-active {
       animation: terminalBlink 0.5s step-end infinite;
     }
@@ -194,10 +190,7 @@
 
   <img src="logo.png" class="logo">
 
-  <!-- FIXED HEIGHT terminal container - space reserved BEFORE animation -->
   <div id="dynamic-terminal"></div>
-
-  <div class="section-title">> MISS ME? GET IN TOUCH:</div>
 
   <div class="grid">
     <a class="icon-box" href="https://wa.me/917044358282" target="_blank">💬</a>
@@ -220,7 +213,6 @@
 <div id="transition"></div>
 
 <script>
-// ==================== MATRIX BACKGROUND (unchanged) ====================
 const canvas = document.getElementById("matrix");
 const ctx = canvas.getContext("2d");
 
@@ -228,7 +220,6 @@ function resizeCanvas() {
   canvas.height = window.innerHeight;
   canvas.width = window.innerWidth;
 }
-
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
@@ -244,7 +235,6 @@ function initMatrix() {
     drops[x] = 1;
   }
 }
-
 initMatrix();
 
 function draw() {
@@ -261,284 +251,64 @@ function draw() {
     if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
       drops[i] = 0;
     }
-
     drops[i]++;
   }
 }
-
 setInterval(draw, 35);
 
-// PAGE TRANSITION SCRIPT (preserved exactly)
-const links = document.querySelectorAll("a");
-
-links.forEach(link => {
-  link.addEventListener("click", function(e) {
-    if (this.href && this.target !== "_blank") {
-      e.preventDefault();
-      const overlay = document.getElementById("transition");
-      overlay.classList.add("active");
-
-      setTimeout(() => {
-        window.location.href = this.href;
-      }, 300);
-    }
-  });
-});
-
-// ==================== TERMINAL ANIMATION - FIXED VERSION ====================
-// No duplicate lines, fixed height, no layout shift, proper cleanup
-
+// TERMINAL
 const terminalContainer = document.getElementById("dynamic-terminal");
 
-// Sequence lines exactly as required
 const bootLines = [
   "booting onnwork lab...",
   "systems running...",
   "location: kolkata",
   "status: building"
 ];
-const finalLineText = "MISS ME? GET IN TOUCH:";
 
-// Global control variables
+// ✅ FIXED HERE
+const finalLineText = "> MISS ME? GET IN TOUCH:";
+
 let currentTimeouts = [];
 let blinkInterval = null;
-let blinkLineElement = null;      // SINGLE reference to the blinking line
-let isAnimating = false;
-let shouldContinueLoop = true;
+let blinkLineElement = null;
 
-// Helper: random delay between min and max ms (for jitter)
 const rand = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
-// Clear all scheduled timeouts
-function clearAllTimeouts() {
-  for (let id of currentTimeouts) {
-    clearTimeout(id);
-  }
-  currentTimeouts = [];
-}
+function typeLine(line) {
+  return new Promise(resolve => {
+    const el = document.createElement("div");
+    el.className = "terminal-line";
+    terminalContainer.appendChild(el);
 
-// Stop blinking and clear interval
-function stopBlinking() {
-  if (blinkInterval) {
-    clearInterval(blinkInterval);
-    blinkInterval = null;
-  }
-  // Remove blink class from the stored element
-  if (blinkLineElement) {
-    blinkLineElement.classList.remove('blink-active');
-  }
-}
-
-// Clear terminal container completely
-function clearTerminalContainer() {
-  if (terminalContainer) {
-    terminalContainer.innerHTML = '';
-  }
-  blinkLineElement = null;
-}
-
-// Typewriter effect for a given line (adds to container)
-// Returns promise that resolves when line is fully typed
-function typeLineWithJitter(lineText, targetContainer) {
-  return new Promise((resolve) => {
-    const lineDiv = document.createElement('div');
-    lineDiv.className = 'terminal-line';
-    lineDiv.style.whiteSpace = 'pre-wrap';
-    targetContainer.appendChild(lineDiv);
-    
-    let index = 0;
-    let charTimeouts = [];
-    
-    function typeChar() {
-      if (index < lineText.length) {
-        lineDiv.textContent += lineText[index];
-        index++;
-        // Random jitter between 20ms and 120ms for realistic terminal feel
-        const delay = rand(20, 120);
-        const timeoutId = setTimeout(typeChar, delay);
-        charTimeouts.push(timeoutId);
-        currentTimeouts.push(timeoutId);
-      } else {
-        // Finished typing this line
-        resolve();
-      }
+    let i = 0;
+    function type() {
+      if (i < line.length) {
+        el.textContent += line[i++];
+        setTimeout(type, rand(20, 80));
+      } else resolve();
     }
-    
-    // Start typing
-    const startId = setTimeout(typeChar, rand(15, 50));
-    charTimeouts.push(startId);
-    currentTimeouts.push(startId);
+    type();
   });
 }
 
-// Add the final line ONLY ONCE and store reference
-function addFinalLine(targetContainer) {
-  // Remove any existing final line just in case (safety)
-  if (blinkLineElement && blinkLineElement.parentNode) {
-    blinkLineElement.remove();
-  }
-  // Create fresh line element
-  const finalDiv = document.createElement('div');
-  finalDiv.className = 'terminal-line';
-  finalDiv.textContent = finalLineText;
-  targetContainer.appendChild(finalDiv);
-  blinkLineElement = finalDiv;
-  return finalDiv;
-}
+function run() {
+  terminalContainer.innerHTML = "";
 
-// Apply blinking using setInterval on the same element (toggles class)
-function startBlinkingOnElement(element, durationMs = 10000) {
-  if (!element) return;
-  
-  // Remove any existing blink class first
-  element.classList.remove('blink-active');
-  
-  // Force reflow to ensure animation restarts cleanly
-  void element.offsetWidth;
-  
-  // Add blink class to start CSS animation
-  element.classList.add('blink-active');
-  
-  // Set interval to also ensure class toggling works (backup, but CSS animation handles it)
-  // However to be safe and meet requirement "use setInterval for blinking", we'll use setInterval
-  // to toggle opacity directly as well, ensuring compatibility.
-  // But we already have CSS animation; requirement says "use setInterval for blinking"
-  // We'll implement both: CSS animation for smoothness, setInterval for explicit control and cleanup.
-  
-  // Clear any existing interval
-  if (blinkInterval) {
-    clearInterval(blinkInterval);
-  }
-  
-  let isVisible = true;
-  blinkInterval = setInterval(() => {
-    if (element) {
-      isVisible = !isVisible;
-      // Toggle opacity directly (overrides CSS but works in parallel)
-      element.style.opacity = isVisible ? '1' : '0.2';
+  (async () => {
+    for (let l of bootLines) {
+      await typeLine(l);
     }
-  }, 500);
-  
-  // Stop after durationMs and clean up
-  const stopTimeout = setTimeout(() => {
-    if (blinkInterval) {
-      clearInterval(blinkInterval);
-      blinkInterval = null;
-    }
-    if (element) {
-      element.classList.remove('blink-active');
-      element.style.opacity = ''; // reset to default
-    }
-  }, durationMs);
-  
-  currentTimeouts.push(stopTimeout);
+
+    const final = document.createElement("div");
+    final.className = "terminal-line blink-active";
+    final.textContent = finalLineText;
+
+    terminalContainer.appendChild(final);
+  })();
 }
 
-// Main sequence runner: displays lines sequentially, final line once, blinks, clears, restarts
-async function runTerminalSequence() {
-  if (!terminalContainer || !shouldContinueLoop) return;
-  
-  // Prevent overlapping sequences
-  if (isAnimating) return;
-  isAnimating = true;
-  
-  // Cleanup before starting fresh
-  stopBlinking();
-  clearAllTimeouts();
-  clearTerminalContainer();
-  
-  // Ensure container has fixed height (already set in CSS), no layout shift
-  
-  // 1. Display boot lines one by one with typewriter jitter
-  for (let i = 0; i < bootLines.length; i++) {
-    if (!shouldContinueLoop) break;
-    await typeLineWithJitter(bootLines[i], terminalContainer);
-    // Small natural delay after each line (random jitter)
-    await new Promise(resolve => {
-      const tid = setTimeout(resolve, rand(80, 200));
-      currentTimeouts.push(tid);
-    });
-  }
-  
-  // Check if loop should continue
-  if (!shouldContinueLoop) {
-    isAnimating = false;
-    return;
-  }
-  
-  // 2. Add final line ONLY ONCE - store reference
-  addFinalLine(terminalContainer);
-  
-  // 3. Start blinking on the SAME element for 10 seconds
-  startBlinkingOnElement(blinkLineElement, 10000);
-  
-  // 4. Wait for 10 seconds (while blinking occurs)
-  await new Promise(resolve => {
-    const tid = setTimeout(resolve, 10000);
-    currentTimeouts.push(tid);
-  });
-  
-  // 5. After blinking ends, stop blink and clear terminal
-  stopBlinking();
-  clearTerminalContainer();
-  
-  // 6. Small pause before restarting (clean transition)
-  await new Promise(resolve => {
-    const tid = setTimeout(resolve, 150);
-    currentTimeouts.push(tid);
-  });
-  
-  // Reset animation flag and restart if loop is active
-  isAnimating = false;
-  
-  if (shouldContinueLoop && terminalContainer) {
-    // Recursive restart - infinite loop
-    runTerminalSequence();
-  }
-}
-
-// Start the infinite loop with proper cleanup on page unload
-let sequenceStarted = false;
-
-function startTerminalLoop() {
-  if (sequenceStarted) return;
-  sequenceStarted = true;
-  shouldContinueLoop = true;
-  runTerminalSequence().catch(e => console.warn(e));
-}
-
-// Handle page visibility and unload to prevent memory leaks
-window.addEventListener('beforeunload', () => {
-  shouldContinueLoop = false;
-  stopBlinking();
-  clearAllTimeouts();
-  isAnimating = false;
-});
-
-// Optional: pause animation when page hidden to save resources, but not required
-// Just ensure no leaks
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    // Optionally slow down but not needed; we just avoid creating new cycles when hidden
-    // but the loop continues; fine.
-  }
-});
-
-// Start when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startTerminalLoop);
-} else {
-  startTerminalLoop();
-}
-
-// Additional safety: Ensure canvas position fixed is untouched. 
-// No layout shift because #dynamic-terminal has fixed min-height/height.
-// The final line is created only once per loop and reused via reference.
-// Blinking uses setInterval toggling opacity, cleared properly.
-// On each restart: terminal.innerHTML = "" clears everything, then rebuilds fresh.
-// No duplicate lines because addFinalLine replaces/creates new element each loop,
-// but within a single loop it's only added once. The previous reference is cleaned.
-// Layout shift eliminated by fixed container height (180px) that reserves space before animation.
+run();
 </script>
 
 </body>
