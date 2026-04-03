@@ -1,1 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playground - BRIC Console</title>
 
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      text-align: center;
+    }
+
+    /* 🔙 Back Button */
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #000;
+      padding: 10px;
+      text-align: left;
+      border-bottom: 2px solid #0f0;
+    }
+
+    .back-btn {
+      color: #0f0;
+      text-decoration: none;
+      font-size: 16px;
+      border: 1px solid #0f0;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+
+    .container {
+      margin-top: 60px;
+    }
+
+    canvas {
+      background: black;
+      margin: 20px auto;
+      display: block;
+      border: 4px solid #0f0;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 80px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 20px;
+      font-size: 18px;
+      background: #222;
+      color: #0f0;
+      border: 2px solid #0f0;
+      border-radius: 10px;
+    }
+
+    button:active {
+      background: #0f0;
+      color: #000;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- 🔙 Back Button -->
+<div class="topbar">
+  <a href="toys.html" class="back-btn">← Back</a>
+</div>
+
+<div class="container">
+
+  <canvas id="screen" width="200" height="400"></canvas>
+
+  <div class="controls">
+    <button onclick="press('w')">↑</button>
+    <button onclick="press('a')">←</button>
+    <button onclick="press('s')">↓</button>
+    <button onclick="press('d')">→</button>
+    <button onclick="press(' ')">●</button>
+    <button onclick="press('enter')">START</button>
+  </div>
+
+</div>
+
+<script>
+const canvas = document.getElementById("screen");
+const ctx = canvas.getContext("2d");
+
+const ROWS = 20;
+const COLS = 10;
+const SIZE = 20;
+
+let grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+
+let keys = {};
+let state = "MENU";
+let selected = 0;
+
+const games = ["SNAKE"];
+
+document.addEventListener("keydown", e => {
+  keys[e.key.toLowerCase()] = true;
+});
+
+document.addEventListener("keyup", e => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+function press(k) {
+  keys[k] = true;
+  setTimeout(() => keys[k] = false, 100);
+}
+
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c]) {
+        ctx.fillStyle = "#0f0";
+        ctx.fillRect(c * SIZE, r * SIZE, SIZE - 1, SIZE - 1);
+      }
+    }
+  }
+}
+
+function drawMenu() {
+  ctx.fillStyle = "#0f0";
+  ctx.font = "16px monospace";
+  ctx.fillText("SELECT GAME", 20, 50);
+
+  games.forEach((g, i) => {
+    ctx.fillText((i === selected ? "> " : "") + g, 40, 100 + i * 20);
+  });
+}
+
+/* 🐍 SNAKE */
+let snake = [{x:5,y:5}];
+let dir = {x:1,y:0};
+
+function updateSnake() {
+  if (keys['w']) dir = {x:0,y:-1};
+  if (keys['s']) dir = {x:0,y:1};
+  if (keys['a']) dir = {x:-1,y:0};
+  if (keys['d']) dir = {x:1,y:0};
+
+  let head = {
+    x: snake[0].x + dir.x,
+    y: snake[0].y + dir.y
+  };
+
+  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+    state = "MENU";
+    snake = [{x:5,y:5}];
+    return;
+  }
+
+  snake.unshift(head);
+  snake.pop();
+
+  grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+  snake.forEach(p => grid[p.y][p.x] = 1);
+}
+
+function loop() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if (state === "MENU") {
+    drawMenu();
+
+    if (keys['w']) selected = (selected - 1 + games.length) % games.length;
+    if (keys['s']) selected = (selected + 1) % games.length;
+
+    if (keys['enter']) {
+      state = "PLAYING";
+    }
+  }
+
+  else if (state === "PLAYING") {
+    updateSnake();
+    drawGrid();
+  }
+
+  setTimeout(loop, 120);
+}
+
+loop();
+</script>
+
+</body>
+</html>
